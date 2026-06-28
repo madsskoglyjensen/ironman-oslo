@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IRONMAN">
+<meta name="theme-color" content="#0a0a0a">
+<title>IRONMAN OSLO</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+  --bg:#0a0a0a; --surface:#141414; --surface2:#1e1e1e; --border:#2a2a2a;
+  --text:#f0f0f0; --muted:#555; --muted2:#888;
+  --swim:#00b4d8; --bike:#f77f00; --run:#2dc653; --brick:#c77dff; --rest:#333; --race:#e63946;
+  --accent:#e63946;
+}
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif; min-height:100vh; padding-bottom:90px; }
+
+/* HEADER */
+.header { padding:54px 20px 12px; }
+.app-eyebrow { font-size:10px; font-weight:700; letter-spacing:4px; color:var(--muted2); }
+.app-title { font-size:26px; font-weight:900; letter-spacing:-0.5px; }
+.header-row { display:flex; justify-content:space-between; align-items:flex-start; }
+.week-badge { background:var(--accent); color:#fff; font-size:11px; font-weight:800; padding:5px 12px; border-radius:20px; letter-spacing:1px; margin-top:4px; }
+.days-to-race { font-size:11px; color:var(--muted2); font-weight:600; margin-top:4px; text-align:right; }
+
+/* QUOTE */
+.quote { margin:14px 20px; padding:14px 16px; background:var(--surface); border-radius:14px; border-left:3px solid var(--accent); font-size:13px; color:var(--muted2); font-style:italic; line-height:1.5; }
+
+/* PHASE */
+.phase-banner { margin:0 20px 16px; padding:14px 16px; background:var(--surface); border-radius:14px; display:flex; align-items:center; gap:12px; }
+.phase-icon { font-size:30px; }
+.phase-label { font-size:10px; font-weight:700; letter-spacing:2px; color:var(--muted2); }
+.phase-name { font-size:16px; font-weight:800; margin-top:2px; }
+.phase-desc { font-size:12px; color:var(--muted2); margin-top:2px; }
+
+/* STATS */
+.stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 20px 16px; }
+.stat-card { background:var(--surface); border-radius:14px; padding:14px 10px; text-align:center; }
+.stat-value { font-size:22px; font-weight:900; }
+.stat-label { font-size:9px; color:var(--muted2); font-weight:700; letter-spacing:1px; margin-top:3px; }
+
+/* KM ROW */
+.km-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:0 20px 16px; }
+.km-card { background:var(--surface); border-radius:14px; padding:12px 10px; text-align:center; }
+.km-val { font-size:20px; font-weight:900; }
+.km-label { font-size:9px; font-weight:700; letter-spacing:1px; margin-top:3px; color:var(--muted2); }
+
+/* FORM CHECK */
+.form-row { display:flex; gap:8px; margin:0 20px 16px; }
+.form-btn { flex:1; padding:10px 6px; border-radius:12px; border:2px solid var(--border); background:var(--surface); color:var(--muted2); font-size:11px; font-weight:700; cursor:pointer; transition:all 0.15s; text-align:center; }
+.form-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(230,57,70,0.1); }
+
+/* PROGRESS */
+.progress-section { margin:0 20px 16px; }
+.progress-header { display:flex; justify-content:space-between; font-size:11px; color:var(--muted2); font-weight:700; letter-spacing:1px; margin-bottom:8px; }
+.progress-track { height:5px; background:var(--surface2); border-radius:99px; overflow:hidden; }
+.progress-fill { height:100%; background:linear-gradient(90deg,var(--swim),var(--bike),var(--run)); border-radius:99px; transition:width 0.6s ease; }
+
+/* WEEK DOTS */
+.week-dots { display:flex; gap:4px; margin:0 20px 20px; flex-wrap:wrap; }
+.week-dot { width:22px; height:22px; border-radius:50%; background:var(--surface2); border:2px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:800; color:var(--muted); cursor:pointer; transition:all 0.2s; }
+.week-dot.current { border-color:var(--accent); color:var(--accent); background:rgba(230,57,70,0.12); }
+.week-dot.done { background:var(--accent); border-color:var(--accent); color:#fff; }
+
+/* CHALLENGES */
+.section-title { font-size:10px; font-weight:800; letter-spacing:2px; color:var(--muted2); margin:0 20px 10px; text-transform:uppercase; }
+.challenges { display:flex; flex-direction:column; gap:8px; margin:0 20px 20px; }
+.challenge { background:var(--surface); border-radius:14px; padding:12px 14px; display:flex; align-items:center; gap:12px; }
+.ch-icon { font-size:18px; width:32px; text-align:center; }
+.ch-info { flex:1; }
+.ch-name { font-size:13px; font-weight:700; }
+.ch-status { font-size:11px; color:var(--muted2); margin-top:2px; }
+.ch-badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px; white-space:nowrap; }
+.ch-badge.done { background:rgba(45,198,83,0.15); color:var(--run); }
+.ch-badge.pending { background:var(--surface2); color:var(--muted2); }
+
+/* NEXT CARD */
+.next-card { margin:0 20px 20px; background:var(--surface); border-radius:18px; overflow:hidden; }
+.next-card-header { padding:16px 18px 12px; display:flex; align-items:center; gap:12px; }
+.next-icon { width:46px; height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+.next-meta { flex:1; }
+.next-label { font-size:10px; font-weight:700; letter-spacing:2px; color:var(--muted2); }
+.next-title { font-size:18px; font-weight:900; margin-top:2px; }
+.next-sub { font-size:12px; color:var(--muted2); margin-top:2px; }
+.start-btn { margin:0 18px 18px; background:var(--accent); color:#fff; border:none; border-radius:14px; padding:16px; font-size:16px; font-weight:900; letter-spacing:0.5px; width:calc(100% - 36px); cursor:pointer; transition:opacity 0.2s; }
+.start-btn:active { opacity:0.8; }
+
+/* DAY CARDS */
+.days-list { display:flex; flex-direction:column; gap:8px; margin:0 20px 20px; }
+.day-card { background:var(--surface); border-radius:16px; padding:14px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:background 0.15s; position:relative; overflow:hidden; }
+.day-card:active { background:var(--surface2); }
+.day-card.done { opacity:0.55; }
+.done-check { position:absolute; right:16px; font-size:16px; font-weight:900; color:var(--run); }
+.day-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.day-icon.swim { background:rgba(0,180,216,0.12); }
+.day-icon.bike { background:rgba(247,127,0,0.12); }
+.day-icon.run  { background:rgba(45,198,83,0.12); }
+.day-icon.brick{ background:rgba(199,125,255,0.12); }
+.day-icon.rest { background:rgba(60,60,60,0.3); }
+.day-icon.race { background:rgba(230,57,70,0.15); }
+.day-info { flex:1; min-width:0; }
+.day-name { font-size:14px; font-weight:800; }
+.day-detail { font-size:11px; color:var(--muted2); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.day-tag { font-size:10px; font-weight:800; letter-spacing:0.5px; padding:3px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+.day-tag.swim  { background:rgba(0,180,216,0.15); color:var(--swim); }
+.day-tag.bike  { background:rgba(247,127,0,0.15); color:var(--bike); }
+.day-tag.run   { background:rgba(45,198,83,0.15); color:var(--run); }
+.day-tag.brick { background:rgba(199,125,255,0.15); color:var(--brick); }
+.day-tag.rest  { background:rgba(60,60,60,0.2); color:var(--muted2); }
+.day-tag.race  { background:rgba(230,57,70,0.15); color:var(--accent); }
+
+/* SCORE BANNER */
+.score-banner { margin:0 20px 16px; background:var(--surface); border-radius:14px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; }
+.score-left { }
+.score-label { font-size:10px; font-weight:700; letter-spacing:2px; color:var(--muted2); }
+.score-val { font-size:28px; font-weight:900; margin-top:2px; }
+.score-sub { font-size:11px; color:var(--muted2); margin-top:2px; }
+.score-ring { width:60px; height:60px; }
+
+/* MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:100; align-items:flex-end; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border-radius:24px 24px 0 0; padding:28px 22px 48px; width:100%; max-height:82vh; overflow-y:auto; }
+.modal-handle { width:40px; height:4px; background:var(--border); border-radius:99px; margin:-10px auto 22px; }
+.modal-title { font-size:22px; font-weight:900; margin-bottom:4px; }
+.modal-sub { font-size:13px; color:var(--muted2); margin-bottom:18px; }
+.workout-block { background:var(--surface2); border-radius:14px; padding:14px 16px; margin-bottom:10px; }
+.workout-block h4 { font-size:11px; font-weight:800; letter-spacing:2px; color:var(--muted2); margin-bottom:8px; }
+.workout-block p { font-size:14px; color:var(--text); line-height:1.65; }
+.stars-label { font-size:11px; font-weight:700; letter-spacing:1px; color:var(--muted2); margin-bottom:8px; }
+.stars { display:flex; gap:10px; margin-bottom:18px; }
+.star { font-size:30px; cursor:pointer; opacity:0.25; transition:all 0.15s; }
+.star.active { opacity:1; }
+.modal-btn { width:100%; padding:16px; border:none; border-radius:14px; font-size:16px; font-weight:900; cursor:pointer; margin-top:8px; }
+.modal-btn.primary { background:var(--accent); color:#fff; }
+.modal-btn.secondary { background:var(--surface2); color:var(--text); }
+.modal-btn:active { opacity:0.8; }
+
+/* TRACKER */
+.tracker-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:0 20px 16px; }
+.tracker-card { background:var(--surface); border-radius:14px; padding:16px 14px; }
+.tracker-big { font-size:32px; font-weight:900; }
+.tracker-label { font-size:10px; font-weight:700; letter-spacing:1px; color:var(--muted2); margin-top:4px; }
+.tracker-sub { font-size:12px; color:var(--muted2); margin-top:4px; }
+
+/* WEEK SUMMARY */
+.week-sum-item { margin:0 20px 8px; background:var(--surface); border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:12px; }
+.wsi-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.wsi-info { flex:1; }
+.wsi-title { font-size:14px; font-weight:800; }
+.wsi-sub { font-size:12px; color:var(--muted2); margin-top:3px; }
+
+/* HISTORY */
+.hist-item { margin:0 20px 8px; background:var(--surface); border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:12px; }
+.hist-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.hist-info { flex:1; }
+.hist-title { font-size:14px; font-weight:800; }
+.hist-meta { font-size:12px; color:var(--muted2); margin-top:3px; }
+.hist-stars { font-size:13px; color:#f4a261; }
+
+/* EMPTY */
+.empty { text-align:center; padding:60px 20px; color:var(--muted2); font-size:14px; line-height:1.8; }
+
+/* NAV */
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:rgba(10,10,10,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; padding:10px 0 22px; z-index:50; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:6px; color:var(--muted2); transition:color 0.15s; }
+.nav-item.active { color:var(--accent); }
+.nav-icon { font-size:22px; }
+.nav-label { font-size:9px; font-weight:800; letter-spacing:1px; }
+
+.page { display:none; }
+.page.active { display:block; }
+</style>
+</head>
+<body>
+
+<!-- HOME -->
+<div id="page-home" class="page active">
+  <div class="header">
+    <div class="header-row">
+      <div>
+        <div class="app-eyebrow">UOFFISIELL</div>
+        <div class="app-title">IRONMAN OSLO</div>
+      </div>
+      <div style="text-align:right">
+        <div class="week-badge" id="week-badge">UKE 1</div>
+        <div class="days-to-race" id="days-to-race">— dager til race</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quote" id="quote"></div>
+
+  <div class="phase-banner">
+    <div class="phase-icon" id="phase-icon">🏗️</div>
+    <div>
+      <div class="phase-label">FASE</div>
+      <div class="phase-name" id="phase-name">Bygg base</div>
+      <div class="phase-desc" id="phase-desc">Svøm. Sykkel. Bygg motoren.</div>
+    </div>
+  </div>
+
+  <!-- DAGSFORM -->
+  <div class="section-title">DAGSFORM</div>
+  <div class="form-row" id="form-row">
+    <div class="form-btn" onclick="setForm('dårlig')">😴 Sliten</div>
+    <div class="form-btn" onclick="setForm('ok')">😐 OK</div>
+    <div class="form-btn" onclick="setForm('bra')">💪 Bra</div>
+    <div class="form-btn" onclick="setForm('toppform')">🔥 Toppform</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-streak">0</div>
+      <div class="stat-label">🔥 STREKK</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-done">0</div>
+      <div class="stat-label">ØKTER</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-score">0</div>
+      <div class="stat-label">⭐ SCORE</div>
+    </div>
+  </div>
+
+  <!-- KM TELLER -->
+  <div class="km-row">
+    <div class="km-card">
+      <div class="km-val" style="color:var(--swim)" id="km-swim">0</div>
+      <div class="km-label">🏊 KM SVØMT</div>
+    </div>
+    <div class="km-card">
+      <div class="km-val" style="color:var(--bike)" id="km-bike">0</div>
+      <div class="km-label">🚴 KM SYKLET</div>
+    </div>
+    <div class="km-card">
+      <div class="km-val" style="color:var(--run)" id="km-run">0</div>
+      <div class="km-label">🏃 KM LØPT</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-section">
+    <div class="progress-header">
+      <span>PROGRESJON</span>
+      <span id="progress-label">UKE 1 AV 12</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+
+  <div class="week-dots" id="week-dots"></div>
+
+  <!-- UKEUTFORDRINGER -->
+  <div class="section-title">UKENTLIGE UTFORDRINGER</div>
+  <div class="challenges" id="challenges"></div>
+
+  <!-- NESTE ØKT -->
+  <div class="section-title">NESTE ØKT</div>
+  <div class="next-card">
+    <div class="next-card-header">
+      <div class="next-icon" id="next-icon" style="background:rgba(0,180,216,0.12)">🏊</div>
+      <div class="next-meta">
+        <div class="next-label">KOMMENDE</div>
+        <div class="next-title" id="next-title">—</div>
+        <div class="next-sub" id="next-sub">—</div>
+      </div>
+    </div>
+    <button class="start-btn" onclick="openNext()">START ØKT →</button>
+  </div>
+
+  <!-- DENNE UKEN -->
+  <div class="section-title">DENNE UKEN</div>
+  <div class="days-list" id="days-list"></div>
+</div>
+
+<!-- TRACKER -->
+<div id="page-tracker" class="page">
+  <div class="header">
+    <div class="app-eyebrow">STATISTIKK</div>
+    <div class="app-title">Tracker</div>
+  </div>
+  <div class="tracker-grid">
+    <div class="tracker-card">
+      <div class="tracker-big" style="color:var(--swim)" id="t-swim-km">0</div>
+      <div class="tracker-label">KM SVØMT</div>
+      <div class="tracker-sub" id="t-swim-n">0 svømminger</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-big" style="color:var(--bike)" id="t-bike-km">0</div>
+      <div class="tracker-label">KM SYKLET</div>
+      <div class="tracker-sub" id="t-bike-n">0 turer</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-big" style="color:var(--run)" id="t-run-km">0</div>
+      <div class="tracker-label">KM LØPT</div>
+      <div class="tracker-sub" id="t-run-n">0 løpeturer</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-big" style="color:var(--brick)" id="t-brick-n">0</div>
+      <div class="tracker-label">BRICK-ØKTER</div>
+      <div class="tracker-sub">Sykkel+løp</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-big" id="t-total">0</div>
+      <div class="tracker-label">TOTALT</div>
+      <div class="tracker-sub">alle økter</div>
+    </div>
+    <div class="tracker-card">
+      <div class="tracker-big" id="t-avg">—</div>
+      <div class="tracker-label">SNITT ★</div>
+      <div class="tracker-sub">rating</div>
+    </div>
+  </div>
+  <div class="section-title" style="margin-top:8px">UKEOVERSIKT</div>
+  <div id="week-summary"></div>
+</div>
+
+<!-- HISTORIKK -->
+<div id="page-history" class="page">
+  <div class="header">
+    <div class="app-eyebrow">LOGG</div>
+    <div class="app-title">Historikk</div>
+  </div>
+  <div id="history-list"><div class="empty">Ingen økter logget ennå.<br>Start din første økt! 🏊</div></div>
+</div>
+
+<!-- NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="showPage('home')" id="nav-home"><div class="nav-icon">🏠</div><div class="nav-label">HJEM</div></div>
+  <div class="nav-item" onclick="showPage('tracker')" id="nav-tracker"><div class="nav-icon">📊</div><div class="nav-label">TRACKER</div></div>
+  <div class="nav-item" onclick="showPage('history')" id="nav-history"><div class="nav-icon">📋</div><div class="nav-label">HISTORIKK</div></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModalBg(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="m-title"></div>
+    <div class="modal-sub" id="m-sub"></div>
+    <div id="m-body"></div>
+    <div id="m-rating-section">
+      <div class="stars-label">HVORDAN GÅR DET?</div>
+      <div class="stars" id="stars">
+        <span class="star" onclick="rateStar(1)">★</span>
+        <span class="star" onclick="rateStar(2)">★</span>
+        <span class="star" onclick="rateStar(3)">★</span>
+        <span class="star" onclick="rateStar(4)">★</span>
+        <span class="star" onclick="rateStar(5)">★</span>
+      </div>
+    </div>
+    <button class="modal-btn primary" id="m-complete-btn" onclick="completeWorkout()">FULLFØR ØKT ✓</button>
+    <button class="modal-btn secondary" onclick="closeModal()">Lukk</button>
+  </div>
+</div>
+
+<script>
+// ── PLAN DATA ─────────────────────────────────────────────────────────────────
+const RACE_DATE = new Date('2026-09-20');
+const START_DATE = new Date('2026-06-28');
+
+const QUOTES = [
+  '"140.6 miles. One day. All you."',
+  '"Svøm smart. Sykkel jevnt. Løp tøft."',
+  '"Den eneste dårlige økten er den du hoppet over."',
+  '"Pain is temporary. Ironman is forever."',
+  '"Hvert bassengmeter teller."',
+  '"20. september. Ingenting stopper deg."',
+  '"Train hard. Race easy. Fullføre er alt."',
+  '"Du er sterkere enn du tror. 12 uker beviser det."',
+  '"Brick-dag: ubehaget er poenget."',
+  '"3,8 km svømming er bare oppvarmingen."',
+  '"Sykkelruta er der racet vinnes."',
+  '"Siste 10 km er ren vilje."',
+];
+
+const PHASES = [
+  {weeks:[1,2,3,4,5], icon:'🏗️', name:'Bygg base', desc:'Svøm og sykkelbase. Motorbygging.'},
+  {weeks:[6,7,8,9,10], icon:'⚡', name:'Bygg distanse', desc:'Lengre runder. Brick-økter. Åpent vann.'},
+  {weeks:[11,12], icon:'🎯', name:'Taper & Race', desc:'Kortere, skarpere. Klar for 20. sept.'},
+];
+
+// km estimates per session [swim_km, bike_km, run_km]
+const PLAN = [
+  // Week 1
+  [{type:'swim',name:'Svømming',detail:'2×1 km basseng · Teknikk',desc:'Fokus på kraulteknikk. Hvil 30 sek mellom km.',dur:'45 min',km:[2,0,0]},
+   {type:'run', name:'Løping',  detail:'40 min rolig · Aerob base',desc:'Snakketempo. Ikke push.',dur:'40 min',km:[0,0,6]},
+   {type:'bike',name:'Sykkel',  detail:'60 min rolig',desc:'Lær sykkelen å kjenne. Øv klikk inn/ut.',dur:'60 min',km:[0,30,0]},
+   {type:'swim',name:'Svømming',detail:'1,5 km utholdenhet',desc:'Svøm så langt du klarer uten pause.',dur:'50 min',km:[1.5,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Aktiv hvile · Tøying',desc:'Strekk ut. Gå en tur.',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'60 km langtur',desc:'Hold jevnt tempo. Test å spise på sykkelen.',dur:'2–2,5t',km:[0,60,0]},
+   {type:'run', name:'Lang løp',detail:'14 km · Aerob',desc:'Rolig tempo. Fullfør, ikke tid.',dur:'80 min',km:[0,0,14]}],
+  // Week 2
+  [{type:'swim',name:'Svømming',detail:'2×1,5 km basseng',desc:'Litt lengre intervaller. Jevnt drag.',dur:'55 min',km:[3,0,0]},
+   {type:'run', name:'Intervall',detail:'45 min · 8×2 min hard',desc:'8 repetisjoner à 2 min raskere, 1 min rolig.',dur:'45 min',km:[0,0,7]},
+   {type:'bike',name:'Sykkel',  detail:'75 min rolig',desc:'Øv klikk inn/ut mange ganger.',dur:'75 min',km:[0,38,0]},
+   {type:'swim',name:'Svømming',detail:'2 km basseng',desc:'Mål hvor lenge du klarer uten pause.',dur:'55 min',km:[2,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'Full hvile.',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'75 km',desc:'Øk tempoet litt vs. forrige uke.',dur:'2,5–3t',km:[0,75,0]},
+   {type:'run', name:'Lang løp',detail:'16 km',desc:'Rolig. Prøv energigel på 10 km.',dur:'90 min',km:[0,0,16]}],
+  // Week 3
+  [{type:'swim',name:'Svømming',detail:'2×2 km basseng',desc:'Kontinuerlig svømming, jevn teknikk.',dur:'65 min',km:[4,0,0]},
+   {type:'run', name:'Tempo',   detail:'50 min · Tempoøkt',desc:'25 min rolig, 20 min under halvmaratontempo.',dur:'50 min',km:[0,0,9]},
+   {type:'bike',name:'Sykkel',  detail:'75 min · Drag',desc:'3–4 min hardere drag innimellom.',dur:'75 min',km:[0,40,0]},
+   {type:'swim',name:'Open water',detail:'Hvervenbukta debut!',desc:'Første tur åpent vann. Svøm en runde. Bli komfortabel.',dur:'60 min',km:[2.5,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'90 km',desc:'Stor langtur. Test ernæringsstrategi.',dur:'3–3,5t',km:[0,90,0]},
+   {type:'run', name:'Lang løp',detail:'18 km',desc:'Fokus på form mot slutten.',dur:'100 min',km:[0,0,18]}],
+  // Week 4 — Recovery
+  [{type:'swim',name:'Svømming',detail:'1,5 km rolig',desc:'Hvileuke. Teknikkfokus.',dur:'40 min',km:[1.5,0,0]},
+   {type:'run', name:'Løping',  detail:'35 min rolig',desc:'Veldig rolig. Nyt det.',dur:'35 min',km:[0,0,5]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Sykkel',  detail:'60 min lett',desc:'Ingen press.',dur:'60 min',km:[0,30,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'80 km lett',desc:'Kortere langtur. Rolig.',dur:'2,5t',km:[0,80,0]},
+   {type:'run', name:'Løping',  detail:'16 km rolig',desc:'Restitusjonsuke — ikke push.',dur:'85 min',km:[0,0,16]}],
+  // Week 5
+  [{type:'swim',name:'Svømming',detail:'2,5 km basseng',desc:'Tilbake for fullt.',dur:'65 min',km:[2.5,0,0]},
+   {type:'run', name:'Intervall',detail:'50 min · 6×3 min hard',desc:'15 min varm opp, 6×3 min hard med 2 min rolig.',dur:'50 min',km:[0,0,9]},
+   {type:'bike',name:'Sykkel',  detail:'80 min',desc:'Bygg opp etter hvileuka.',dur:'80 min',km:[0,42,0]},
+   {type:'swim',name:'Open water',detail:'Hvervenbukta · 2,5 km',desc:'Åpent vann. Fokus på å svømme rett.',dur:'65 min',km:[2.5,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'100 km 🎉',desc:'Første 100 km! En milepæl.',dur:'3,5t',km:[0,100,0]},
+   {type:'run', name:'Lang løp',detail:'20 km',desc:'Dagen etter 100 km. Tunge bein — det er meningen.',dur:'110 min',km:[0,0,20]}],
+  // Week 6
+  [{type:'swim',name:'Open water',detail:'Hvervenbukta · 3 km',desc:'Test våddrakt og briller. Jevn og kontrollert.',dur:'70 min',km:[3,0,0]},
+   {type:'run', name:'Tempo',   detail:'55 min',desc:'30 min i komfortabelt-hardt tempo.',dur:'55 min',km:[0,0,10]},
+   {type:'bike',name:'Sykkel',  detail:'90 min · 3×10 min hard',desc:'Over racetempo i dragene.',dur:'90 min',km:[0,48,0]},
+   {type:'swim',name:'Svømming',detail:'2,5 km basseng',desc:'Teknikk og drag.',dur:'60 min',km:[2.5,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'120 km',desc:'Test ernæringsstrategi nøye. 60–90g karbo/time.',dur:'4t',km:[0,120,0]},
+   {type:'run', name:'Lang løp',detail:'22 km',desc:'Rolig og jevnt. Du er i rute.',dur:'2t',km:[0,0,22]}],
+  // Week 7
+  [{type:'swim',name:'Open water',detail:'Hvervenbukta · 3,5 km',desc:'Nær full ironman-distanse. Du klarer det.',dur:'75 min',km:[3.5,0,0]},
+   {type:'brick',name:'Brick I',detail:'60 km sykkel → 5 km løp',desc:'Første brick! Legg merke til bena ut av sykkelen.',dur:'2,5t',km:[0,60,5]},
+   {type:'bike',name:'Sykkel',  detail:'90 min rolig',desc:'Hviledag mellom harde dager.',dur:'90 min',km:[0,48,0]},
+   {type:'swim',name:'Svømming',detail:'2,5 km basseng',desc:'',dur:'60 min',km:[2.5,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'130 km',desc:'Lang og jevn. Etter dette er 180 km mulig.',dur:'4,5t',km:[0,130,0]},
+   {type:'run', name:'Lang løp',detail:'24 km',desc:'Lytt til kroppen.',dur:'2,5t',km:[0,0,24]}],
+  // Week 8 — Recovery
+  [{type:'swim',name:'Svømming',detail:'2 km rolig',desc:'Hvileuke.',dur:'50 min',km:[2,0,0]},
+   {type:'run', name:'Løping',  detail:'40 min rolig',desc:'Veldig rolig.',dur:'40 min',km:[0,0,6]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Sykkel',  detail:'75 min lett',desc:'',dur:'75 min',km:[0,38,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'80 km lett',desc:'',dur:'2,5t',km:[0,80,0]},
+   {type:'run', name:'Løping',  detail:'18 km',desc:'Klar for toppukene.',dur:'95 min',km:[0,0,18]}],
+  // Week 9
+  [{type:'swim',name:'3,8 KM! 🎉',detail:'Full ironman-distanse i svømmingen!',desc:'DET ER DETTE. 3,8 km i Hvervenbukta. Bevis for deg selv.',dur:'80 min',km:[3.8,0,0]},
+   {type:'brick',name:'Brick II',detail:'80 km sykkel → 8 km løp',desc:'Lengre brick. Fokus på jevn løpefart ut av sykkelen.',dur:'3,5t',km:[0,80,8]},
+   {type:'bike',name:'Sykkel',  detail:'90 min',desc:'',dur:'90 min',km:[0,48,0]},
+   {type:'swim',name:'Svømming',detail:'3 km basseng',desc:'',dur:'70 min',km:[3,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'150 km 💪',desc:'Planlegg matdepoter. Mentalt like mye som fysisk.',dur:'5t',km:[0,150,0]},
+   {type:'run', name:'Lang løp',detail:'26 km',desc:'Dagen etter 150 km. Det er slitsomt. Det er meningen.',dur:'2,5t',km:[0,0,26]}],
+  // Week 10
+  [{type:'swim',name:'Open water',detail:'3,5 km · Hvervenbukta',desc:'Jevn og kontrollert. Du kan dette nå.',dur:'75 min',km:[3.5,0,0]},
+   {type:'brick',name:'Brick III',detail:'100 km sykkel → 10 km løp',desc:'Lengste brick. Etter dette er du klar for race day.',dur:'4t',km:[0,100,10]},
+   {type:'bike',name:'Sykkel',  detail:'90 min',desc:'',dur:'90 min',km:[0,48,0]},
+   {type:'swim',name:'Svømming',detail:'3 km basseng',desc:'',dur:'70 min',km:[3,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Lang sykkel',detail:'160 km 🔥',desc:'Siste store sykkeltur. Du er klar.',dur:'5,5t',km:[0,160,0]},
+   {type:'run', name:'Lang løp',detail:'28 km',desc:'Siste lange løp. Taper starter neste uke.',dur:'2,5t',km:[0,0,28]}],
+  // Week 11 — Taper
+  [{type:'swim',name:'Svømming',detail:'3 km basseng',desc:'Taper starter. Volum ned, intensitet holder.',dur:'65 min',km:[3,0,0]},
+   {type:'run', name:'Løping',  detail:'45 min · Noen drag',desc:'Kort og skarp. Hold deg kvikk.',dur:'45 min',km:[0,0,8]},
+   {type:'bike',name:'Sykkel',  detail:'80 min · Noen drag',desc:'Kortere men litt intensitet.',dur:'80 min',km:[0,42,0]},
+   {type:'swim',name:'Open water',detail:'2,5 km · Siste OW-økt',desc:'Nyt det. Du er klar.',dur:'60 min',km:[2.5,0,0]},
+   {type:'rest',name:'Hvile',   detail:'Hviledag',desc:'',dur:'—',km:[0,0,0]},
+   {type:'bike',name:'Sykkel',  detail:'100 km',desc:'Kortere enn toppukene. Jevnt og behagelig.',dur:'3,5t',km:[0,100,0]},
+   {type:'run', name:'Løping',  detail:'20 km',desc:'Siste noe-lange løp.',dur:'110 min',km:[0,0,20]}],
+  // Week 12 — Race week
+  [{type:'swim',name:'Svømming',detail:'20 min rolig',desc:'Vekk støvlene. Ingen press.',dur:'20 min',km:[0.8,0,0]},
+   {type:'run', name:'Løping',  detail:'25 min rolig',desc:'Lett og fri.',dur:'25 min',km:[0,0,4]},
+   {type:'bike',name:'Sykkel',  detail:'45 min · Noen drag',desc:'Korte skarpe drag for å kjenne at du er kvikk.',dur:'45 min',km:[0,22,0]},
+   {type:'rest',name:'Forberedelse',detail:'Pakk utstyr · Sjekk sykkel',desc:'Pakk bag. Sjekk dekk og bremser. Legg ut depotbager.',dur:'—',km:[0,0,0]},
+   {type:'rest',name:'Full hvile',detail:'Spis godt · Sov tidlig',desc:'Karbolade. Legg deg tidlig. Du er klar.',dur:'—',km:[0,0,0]},
+   {type:'rest',name:'Race eve',detail:'10 min tøying · Sov tidlig',desc:'Sett alarm ×3. Du har gjort jobben.',dur:'—',km:[0,0,0]},
+   {type:'race',name:'🏁 RACE DAY',detail:'3,8 km · 180 km · 42,2 km',desc:'12 uker. Alt for dette. Hvervenbukta → sykkelrute → løp. Nyt hvert eneste steg. Du er en ironman.',dur:'12–16t',km:[3.8,180,42.2]}],
+];
+
+const CHALLENGES_DEF = [
+  {icon:'🏊', name:'Fullfør alle svømminger', check: (w,c) => PLAN[w-1].filter((d,i)=>d.type==='swim'&&c[`w${w}d${i}`]).length >= PLAN[w-1].filter(d=>d.type==='swim').length && PLAN[w-1].some(d=>d.type==='swim')},
+  {icon:'🚴', name:'Fullfør langturen', check: (w,c) => PLAN[w-1].filter((d,i)=>d.type==='bike'&&c[`w${w}d${i}`]).length >= 1},
+  {icon:'🏃', name:'Fullfør lang løpetur', check: (w,c) => PLAN[w-1].filter((d,i)=>d.type==='run'&&c[`w${w}d${i}`]).length >= 1},
+  {icon:'⭐', name:'Gi en økt 5 stjerner', check: (w,c) => Object.entries(c).some(([k,v])=>k.startsWith(`w${w}`)&&v.star===5)},
+  {icon:'🔥', name:'Logg din første økt', check: (w,c) => Object.keys(c).some(k=>k.startsWith(`w${w}`))},
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let S = JSON.parse(localStorage.getItem('im_state')||'null') || {
+  week:1, completed:{}, form:null, pendingRating:0
+};
+let activeKey = null;
+
+function save(){ localStorage.setItem('im_state', JSON.stringify(S)); }
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+function autoWeek(){
+  const diff = Math.floor((Date.now()-START_DATE)/(7*86400000));
+  return Math.max(1,Math.min(12,diff+1));
+}
+function daysLeft(){ return Math.max(0,Math.ceil((RACE_DATE-Date.now())/86400000)); }
+function typeEmoji(t){ return {swim:'🏊',bike:'🚴',run:'🏃',brick:'⚡',rest:'😴',race:'🏁'}[t]||'💪'; }
+function typeRGB(t){ return {swim:'0,180,216',bike:'247,127,0',run:'45,198,83',brick:'199,125,255',rest:'60,60,60',race:'230,57,70'}[t]||'100,100,100'; }
+function typeColor(t){ return `rgba(${typeRGB(t)},1)`; }
+
+function calcKm(){
+  let sv=0,bi=0,ru=0;
+  Object.keys(S.completed).forEach(k=>{
+    const m=k.match(/w(\d+)d(\d+)/); if(!m) return;
+    const d=PLAN[m[1]-1]?.[m[2]];
+    if(!d) return;
+    sv+=d.km[0]; bi+=d.km[1]; ru+=d.km[2];
+  });
+  return {sv:Math.round(sv*10)/10, bi:Math.round(bi), ru:Math.round(ru)};
+}
+
+function calcScore(){
+  const ratings=Object.values(S.completed).map(v=>v.star).filter(Boolean);
+  return ratings.length ? Math.round(ratings.reduce((a,b)=>a+b,0)/ratings.length*10)/10 : 0;
+}
+
+function calcStreak(){
+  let streak=0;
+  for(let w=S.week;w>=1;w--){
+    if(Object.keys(S.completed).some(k=>k.startsWith(`w${w}`))) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render(){
+  const w=S.week;
+  const phase=PHASES.find(p=>p.weeks.includes(w))||PHASES[0];
+  const km=calcKm();
+  const done=Object.keys(S.completed).length;
+
+  document.getElementById('week-badge').textContent=`UKE ${w}`;
+  document.getElementById('days-to-race').textContent=`${daysLeft()} dager til race`;
+  document.getElementById('quote').textContent=QUOTES[(w-1)%QUOTES.length];
+  document.getElementById('phase-icon').textContent=phase.icon;
+  document.getElementById('phase-name').textContent=phase.name;
+  document.getElementById('phase-desc').textContent=phase.desc;
+
+  // Form buttons
+  document.querySelectorAll('.form-btn').forEach(b=>{
+    const f=b.getAttribute('onclick').match(/'(\w+)'/)?.[1];
+    b.classList.toggle('active', S.form===f);
+  });
+
+  // Stats
+  document.getElementById('stat-streak').textContent=calcStreak();
+  document.getElementById('stat-done').textContent=done;
+  document.getElementById('stat-score').textContent=calcScore()||'—';
+
+  // KM
+  document.getElementById('km-swim').textContent=km.sv;
+  document.getElementById('km-bike').textContent=km.bi;
+  document.getElementById('km-run').textContent=km.ru;
+
+  // Progress
+  document.getElementById('progress-label').textContent=`UKE ${w} AV 12`;
+  document.getElementById('progress-fill').style.width=`${(w/12)*100}%`;
+
+  // Week dots
+  const dots=document.getElementById('week-dots');
+  dots.innerHTML='';
+  for(let i=1;i<=12;i++){
+    const el=document.createElement('div');
+    el.className='week-dot'+(i===w?' current':i<w?' done':'');
+    el.textContent=i;
+    const wi=i; el.onclick=()=>{S.week=wi;save();render();};
+    dots.appendChild(el);
+  }
+
+  // Challenges
+  const ch=document.getElementById('challenges');
+  ch.innerHTML='';
+  CHALLENGES_DEF.forEach(c=>{
+    const done=c.check(w,S.completed);
+    const el=document.createElement('div');
+    el.className='challenge';
+    el.innerHTML=`<div class="ch-icon">${c.icon}</div>
+      <div class="ch-info"><div class="ch-name">${c.name}</div>
+      <div class="ch-status">${done?'Fullført!':'Pågår...'}</div></div>
+      <div class="ch-badge ${done?'done':'pending'}">${done?'✓ DONE':'Pågår'}</div>`;
+    ch.appendChild(el);
+  });
+
+  // Days
+  const dl=document.getElementById('days-list');
+  dl.innerHTML='';
+  const days=['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
+  PLAN[w-1].forEach((day,i)=>{
+    const key=`w${w}d${i}`;
+    const isDone=!!S.completed[key];
+    const el=document.createElement('div');
+    el.className='day-card'+(isDone?' done':'');
+    const stars=S.completed[key]?.star?'★'.repeat(S.completed[key].star):'';
+    el.innerHTML=`
+      ${isDone?'<div class="done-check">✓</div>':''}
+      <div class="day-icon ${day.type}">${typeEmoji(day.type)}</div>
+      <div class="day-info">
+        <div class="day-name">${days[i]} · ${day.name}</div>
+        <div class="day-detail">${day.detail}${stars?' · '+stars:''}</div>
+      </div>
+      <span class="day-tag ${day.type}">${day.dur}</span>`;
+    if(!isDone && day.type!=='rest') el.onclick=()=>openWorkout(w,i);
+    dl.appendChild(el);
+  });
+
+  // Next workout
+  const nextI=PLAN[w-1].findIndex((d,i)=>d.type!=='rest'&&!S.completed[`w${w}d${i}`]);
+  if(nextI>=0){
+    const nd=PLAN[w-1][nextI];
+    document.getElementById('next-icon').textContent=typeEmoji(nd.type);
+    document.getElementById('next-icon').style.background=`rgba(${typeRGB(nd.type)},0.12)`;
+    document.getElementById('next-title').textContent=nd.name;
+    document.getElementById('next-sub').textContent=nd.detail;
+  } else {
+    document.getElementById('next-title').textContent='🎉 Uken fullført!';
+    document.getElementById('next-sub').textContent='Rull til neste uke';
+    document.getElementById('next-icon').textContent='🏆';
+  }
+
+  renderTracker(); renderHistory();
+}
+
+function renderTracker(){
+  let sv=0,bi=0,ru=0,br=0,total=0,sn=0,bn=0,rn=0;
+  const ratings=[];
+  Object.entries(S.completed).forEach(([k,v])=>{
+    const m=k.match(/w(\d+)d(\d+)/); if(!m) return;
+    const d=PLAN[m[1]-1]?.[m[2]]; if(!d) return;
+    sv+=d.km[0]; bi+=d.km[1]; ru+=d.km[2];
+    if(d.type==='swim') sn++;
+    if(d.type==='bike') bn++;
+    if(d.type==='run')  rn++;
+    if(d.type==='brick') br++;
+    total++;
+    if(v.star) ratings.push(v.star);
+  });
+  document.getElementById('t-swim-km').textContent=Math.round(sv*10)/10;
+  document.getElementById('t-swim-n').textContent=`${sn} svømminger`;
+  document.getElementById('t-bike-km').textContent=Math.round(bi);
+  document.getElementById('t-bike-n').textContent=`${bn} sykkelturer`;
+  document.getElementById('t-run-km').textContent=Math.round(ru);
+  document.getElementById('t-run-n').textContent=`${rn} løpeturer`;
+  document.getElementById('t-brick-n').textContent=br;
+  document.getElementById('t-total').textContent=total;
+  const avg=ratings.length?(ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1):null;
+  document.getElementById('t-avg').textContent=avg?avg+'★':'—';
+
+  const ws=document.getElementById('week-summary');
+  ws.innerHTML='';
+  for(let w=1;w<=12;w++){
+    const d=PLAN[w-1].filter((_,i)=>S.completed[`w${w}d${i}`]).length;
+    if(!d) continue;
+    const t=PLAN[w-1].filter(x=>x.type!=='rest').length;
+    const el=document.createElement('div');
+    el.className='week-sum-item';
+    el.innerHTML=`<div class="wsi-dot" style="background:${d===t?'var(--run)':'var(--bike)'}"></div>
+      <div class="wsi-info"><div class="wsi-title">Uke ${w}</div>
+      <div class="wsi-sub">${d} av ${t} økter · ${d===t?'✅ Fullført':'🔄 Pågår'}</div></div>`;
+    ws.appendChild(el);
+  }
+  if(!ws.children.length) ws.innerHTML='<div class="empty">Ingen uker startet ennå.</div>';
+}
+
+function renderHistory(){
+  const list=document.getElementById('history-list');
+  const entries=Object.entries(S.completed).sort((a,b)=>new Date(b[1].date)-new Date(a[1].date));
+  if(!entries.length){list.innerHTML='<div class="empty">Ingen økter logget ennå.<br>Start din første økt! 🏊</div>';return;}
+  list.innerHTML='';
+  entries.forEach(([key,val])=>{
+    const m=key.match(/w(\d+)d(\d+)/); if(!m) return;
+    const d=PLAN[m[1]-1]?.[m[2]]; if(!d) return;
+    const el=document.createElement('div');
+    el.className='hist-item';
+    const dt=new Date(val.date);
+    el.innerHTML=`<div class="hist-dot" style="background:${typeColor(d.type)}"></div>
+      <div class="hist-info"><div class="hist-title">${typeEmoji(d.type)} ${d.name}</div>
+      <div class="hist-meta">Uke ${m[1]} · ${dt.toLocaleDateString('no',{day:'numeric',month:'short'})}</div></div>
+      <div class="hist-stars">${val.star?'★'.repeat(val.star):''}</div>`;
+    list.appendChild(el);
+  });
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function openWorkout(week,i){
+  const d=PLAN[week-1][i];
+  activeKey=`w${week}d${i}`;
+  S.pendingRating=0;
+  document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
+  document.getElementById('m-title').textContent=`${typeEmoji(d.type)} ${d.name}`;
+  document.getElementById('m-sub').textContent=d.detail+(d.dur!=='—'?' · '+d.dur:'');
+  document.getElementById('m-body').innerHTML=d.desc?`<div class="workout-block"><h4>OM ØKTEN</h4><p>${d.desc}</p></div>`:'';
+  document.getElementById('m-rating-section').style.display=d.type==='rest'?'none':'block';
+  document.getElementById('modal').classList.add('open');
+}
+
+function openNext(){
+  const w=S.week;
+  const i=PLAN[w-1].findIndex((d,idx)=>d.type!=='rest'&&!S.completed[`w${w}d${idx}`]);
+  if(i>=0) openWorkout(w,i);
+}
+
+function rateStar(n){
+  S.pendingRating=n;
+  document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<n));
+}
+
+function completeWorkout(){
+  if(!activeKey) return;
+  S.completed[activeKey]={star:S.pendingRating,date:new Date().toISOString()};
+  save(); closeModal(); render();
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open');activeKey=null;}
+function closeModalBg(e){if(e.target===document.getElementById('modal'))closeModal();}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+}
+
+function setForm(f){S.form=f;save();render();}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+S.week=autoWeek(); save(); render();
+</script>
+</body>
+</html>
