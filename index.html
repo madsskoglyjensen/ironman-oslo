@@ -164,6 +164,33 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 /* EMPTY */
 .empty { text-align:center; padding:60px 20px; color:var(--muted2); font-size:14px; line-height:1.8; }
 
+/* GARMIN */
+.garmin-header { margin:0 20px 16px; display:flex; align-items:center; justify-content:space-between; }
+.garmin-sync-btn { background:var(--surface2); border:1px solid var(--border); color:var(--muted2); font-size:11px; font-weight:700; padding:7px 14px; border-radius:20px; cursor:pointer; letter-spacing:0.5px; }
+.garmin-sync-btn.syncing { color:var(--accent); border-color:var(--accent); }
+.garmin-sync-time { font-size:10px; color:var(--muted); margin-top:3px; }
+.garmin-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:0 20px 16px; }
+.garmin-stat { background:var(--surface); border-radius:14px; padding:14px 12px; }
+.garmin-stat-val { font-size:26px; font-weight:900; }
+.garmin-stat-label { font-size:9px; font-weight:700; letter-spacing:1px; color:var(--muted2); margin-top:4px; }
+.garmin-stat-sub { font-size:11px; color:var(--muted2); margin-top:3px; }
+.garmin-activity { margin:0 20px 8px; background:var(--surface); border-radius:16px; padding:14px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; }
+.garmin-activity:active { background:var(--surface2); }
+.garmin-act-icon { width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+.garmin-act-info { flex:1; min-width:0; }
+.garmin-act-name { font-size:14px; font-weight:800; }
+.garmin-act-meta { font-size:11px; color:var(--muted2); margin-top:3px; }
+.garmin-act-stats { display:flex; gap:10px; margin-top:5px; }
+.garmin-act-stat { font-size:10px; font-weight:700; color:var(--muted2); }
+.garmin-act-stat span { color:var(--text); }
+.garmin-act-badge { font-size:10px; font-weight:800; padding:3px 9px; border-radius:20px; white-space:nowrap; flex-shrink:0; align-self:flex-start; }
+.garmin-detail-modal { background:var(--surface); border-radius:24px 24px 0 0; padding:28px 22px 48px; width:100%; max-height:85vh; overflow-y:auto; }
+.garmin-hr-zones { display:flex; gap:4px; height:40px; margin:12px 0; align-items:flex-end; }
+.garmin-hr-zone { flex:1; border-radius:4px 4px 0 0; transition:height 0.5s; }
+.zone-label { font-size:8px; color:var(--muted2); text-align:center; margin-top:3px; }
+.garmin-match { background:rgba(45,198,83,0.1); border:1px solid rgba(45,198,83,0.3); border-radius:12px; padding:10px 14px; margin:12px 0; font-size:12px; color:var(--run); font-weight:700; }
+.garmin-nomatch { background:rgba(247,127,0,0.08); border:1px solid rgba(247,127,0,0.2); border-radius:12px; padding:10px 14px; margin:12px 0; font-size:12px; color:var(--bike); font-weight:600; }
+
 /* NAV */
 .bottom-nav { position:fixed; bottom:0; left:0; right:0; background:rgba(10,10,10,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; padding:10px 0 22px; z-index:50; }
 .nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:6px; color:var(--muted2); transition:color 0.15s; }
@@ -329,10 +356,38 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
   <div id="history-list"><div class="empty">Ingen økter logget ennå.<br>Start din første økt! 🏊</div></div>
 </div>
 
+<!-- GARMIN -->
+<div id="page-garmin" class="page">
+  <div class="header">
+    <div class="app-eyebrow">AKTIVITETSDATA</div>
+    <div class="app-title">Garmin</div>
+  </div>
+  <div class="garmin-header">
+    <div>
+      <button class="garmin-sync-btn" id="garmin-sync-btn" onclick="syncGarmin()">⟳ Synk nå</button>
+      <div class="garmin-sync-time" id="garmin-sync-time">Sist synket: aldri</div>
+    </div>
+    <div style="font-size:11px;color:var(--muted2);text-align:right">Siste 20 aktiviteter</div>
+  </div>
+  <div class="garmin-stats" id="garmin-stats"></div>
+  <div class="section-title">SISTE AKTIVITETER</div>
+  <div id="garmin-list"></div>
+</div>
+
+<!-- GARMIN DETAIL MODAL -->
+<div class="modal-overlay" id="garmin-modal" onclick="closeGarminModal(event)">
+  <div class="garmin-detail-modal">
+    <div class="modal-handle"></div>
+    <div id="garmin-modal-content"></div>
+    <button class="modal-btn secondary" onclick="document.getElementById('garmin-modal').classList.remove('open')" style="margin-top:12px">Lukk</button>
+  </div>
+</div>
+
 <!-- NAV -->
 <div class="bottom-nav">
   <div class="nav-item active" onclick="showPage('home')" id="nav-home"><div class="nav-icon">🏠</div><div class="nav-label">HJEM</div></div>
   <div class="nav-item" onclick="showPage('tracker')" id="nav-tracker"><div class="nav-icon">📊</div><div class="nav-label">TRACKER</div></div>
+  <div class="nav-item" onclick="showPage('garmin')" id="nav-garmin"><div class="nav-icon">⌚</div><div class="nav-label">GARMIN</div></div>
   <div class="nav-item" onclick="showPage('history')" id="nav-history"><div class="nav-icon">📋</div><div class="nav-label">HISTORIKK</div></div>
 </div>
 
@@ -732,12 +787,265 @@ function showPage(name){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
+  if(name==='garmin') renderGarmin();
 }
 
 function setForm(f){S.form=f;save();render();}
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 S.week=autoWeek(); save(); render();
-</script>
+
+// ── GARMIN ────────────────────────────────────────────────────────────────────
+// Scraped from connect.garmin.com — dine faktiske aktiviteter
+const GARMIN_SEED = [
+  {date:'2026-06-30',name:'Oslo Løping',type:'run',km:7.43,time:'40:01',pace:'5:23',hr:157,elev:58},
+  {date:'2026-06-28',name:'Oslo Løping',type:'run',km:4.01,time:'25:34',pace:'6:22',hr:150,elev:80},
+  {date:'2026-05-21',name:'Styrke',type:'strength',km:0,time:'1:11:56',pace:null,hr:110,hrMax:158,kcal:484,sets:18},
+  {date:'2026-05-20',name:'Oslo Sykling',type:'bike',km:3.15,time:'8:50',pace:null,speed:21.4,hr:null,elev:49},
+  {date:'2026-05-15',name:'Oslo Løping',type:'run',km:11.79,time:'50:50',pace:'4:19',hr:159,elev:63},
+  {date:'2026-04-29',name:'Oslo Løping',type:'run',km:11.62,time:'50:51',pace:'4:23',hr:161,elev:59},
+  {date:'2026-04-28',name:'Oslo Løping',type:'run',km:8.02,time:'39:04',pace:'4:52',hr:160,elev:61},
+  {date:'2026-04-07',name:'Oslo Turmarsj',type:'hike',km:5.88,time:'55:12',pace:'9:23',hr:null,kcal:615,weight:26},
+  {date:'2026-04-02',name:'Ringebu Langrenn, skøyting',type:'ski',km:17.17,time:'1:51:55',pace:null,speed:9.2,hr:121},
+  {date:'2026-03-31',name:'Ringebu Langrenn, skøyting',type:'ski',km:22.87,time:'2:27:10',pace:null,speed:9.3,hr:128},
+  {date:'2026-03-31',name:'Ringebu Langrenn, skøyting',type:'ski',km:5.34,time:'52:17',pace:null,speed:6.1,hr:135},
+  {date:'2026-03-29',name:'Oslo Løping',type:'run',km:3.59,time:'16:07',pace:'4:29',hr:157,elev:38},
+  {date:'2026-03-24',name:'Oslo Løping',type:'run',km:10.07,time:'44:26',pace:'4:25',hr:161,elev:77},
+  {date:'2026-03-23',name:'Styrke',type:'strength',km:0,time:'54:27',pace:null,hr:106,hrMax:150,kcal:373,sets:1},
+  {date:'2026-03-20',name:'Oslo Løping',type:'run',km:10.88,time:'44:14',pace:'4:04',hr:158,elev:61},
+  {date:'2026-03-16',name:'Oslo Fotball',type:'soccer',km:6.35,time:'1:23:03',pace:null,speed:4.6,hr:149,kcal:1056},
+  {date:'2026-03-15',name:'Oslo Løping',type:'run',km:8.03,time:'31:51',pace:'3:58',hr:164,elev:51},
+  {date:'2026-03-11',name:'Oslo Løping',type:'run',km:11.59,time:'53:54',pace:'4:39',hr:150,elev:65},
+  {date:'2026-03-09',name:'Oslo Fotball',type:'soccer',km:7.20,time:'1:30:19',pace:null,speed:4.8,hr:141,kcal:1015},
+  {date:'2026-03-07',name:'Oslo Løping',type:'run',km:0.62,time:'2:17',pace:'3:43',hr:150,elev:7},
+];
+
+let GARMIN_ACTS = JSON.parse(localStorage.getItem('garmin_acts')||'null') || GARMIN_SEED;
+let garminSyncTime = localStorage.getItem('garmin_sync_time') || null;
+
+function garminEmoji(t){
+  return {run:'🏃',bike:'🚴',swim:'🏊',strength:'🏋️',hike:'🥾',ski:'⛷️',soccer:'⚽',brick:'⚡'}[t]||'💪';
+}
+function garminColor(t){
+  return {run:'var(--run)',bike:'var(--bike)',swim:'var(--swim)',strength:'var(--brick)',hike:'#a8dadc',ski:'#90e0ef',soccer:'#f4a261',brick:'var(--brick)'}[t]||'var(--muted2)';
+}
+function garminBg(t){
+  return {run:'rgba(45,198,83,0.12)',bike:'rgba(247,127,0,0.12)',swim:'rgba(0,180,216,0.12)',strength:'rgba(199,125,255,0.12)',hike:'rgba(168,218,220,0.12)',ski:'rgba(144,224,239,0.12)',soccer:'rgba(244,162,97,0.12)'}[t]||'rgba(100,100,100,0.12)';
+}
+
+// Match a Garmin activity to an ironman plan workout
+function matchToPlan(act){
+  const actDate = new Date(act.date);
+  const daysSinceStart = Math.floor((actDate - new Date('2026-06-28')) / 86400000);
+  if(daysSinceStart < 0) return null;
+  const week = Math.floor(daysSinceStart / 7) + 1;
+  const dayOfWeek = daysSinceStart % 7;
+  if(week < 1 || week > 12) return null;
+  const planned = PLAN[week-1]?.[dayOfWeek];
+  if(!planned || planned.type === 'rest') return null;
+  if(planned.type === act.type || (planned.type==='brick' && (act.type==='run'||act.type==='bike'))) {
+    return {week, day: dayOfWeek, planned};
+  }
+  return null;
+}
+
+function analyzeRun(act){
+  // Estimate HR zones based on max HR ~185 (typical for age)
+  const maxHR = 185;
+  const zones = [
+    {name:'Z1', min:0, max:0.6*maxHR, color:'#90e0ef'},
+    {name:'Z2', min:0.6*maxHR, max:0.7*maxHR, color:'#2dc653'},
+    {name:'Z3', min:0.7*maxHR, max:0.8*maxHR, color:'#f77f00'},
+    {name:'Z4', min:0.8*maxHR, max:0.9*maxHR, color:'#e63946'},
+    {name:'Z5', min:0.9*maxHR, max:maxHR, color:'#c77dff'},
+  ];
+  const avgHR = act.hr || 155;
+  // Estimate zone distribution based on avg HR
+  const zoneIdx = zones.findIndex(z => avgHR >= z.min && avgHR < z.max);
+  const dist = [5,15,40,30,10]; // rough bell around detected zone
+  const shifted = dist.map((_,i) => {
+    const delta = Math.abs(i - zoneIdx);
+    return Math.max(3, dist[Math.min(4, Math.max(0, 2 + i - zoneIdx))]);
+  });
+  const total = shifted.reduce((a,b)=>a+b,0);
+  return zones.map((z,i) => ({...z, pct: Math.round(shifted[i]/total*100)}));
+}
+
+function hrZoneColor(pct, zone){
+  const colors = ['#90e0ef','#2dc653','#f77f00','#e63946','#c77dff'];
+  return colors[zone];
+}
+
+function paceToSec(paceStr){
+  if(!paceStr) return null;
+  const [m,s] = paceStr.split(':').map(Number);
+  return m*60+s;
+}
+
+function renderGarmin(){
+  // Stats summary
+  const runs = GARMIN_ACTS.filter(a=>a.type==='run');
+  const totalRunKm = runs.reduce((s,a)=>s+a.km,0);
+  const avgPace = runs.filter(a=>a.pace).reduce((s,a)=>s+paceToSec(a.pace),0) / runs.filter(a=>a.pace).length;
+  const avgPaceStr = avgPace ? `${Math.floor(avgPace/60)}:${String(Math.round(avgPace%60)).padStart(2,'0')}` : '—';
+  const avgHR = runs.filter(a=>a.hr).reduce((s,a)=>s+a.hr,0) / runs.filter(a=>a.hr).length;
+
+  const bestPaceRun = [...runs].filter(a=>a.pace).sort((a,b)=>paceToSec(a.pace)-paceToSec(b.pace))[0];
+
+  const gs = document.getElementById('garmin-stats');
+  gs.innerHTML = `
+    <div class="garmin-stat">
+      <div class="garmin-stat-val" style="color:var(--run)">${totalRunKm.toFixed(1)}</div>
+      <div class="garmin-stat-label">KM LØPT TOTALT</div>
+      <div class="garmin-stat-sub">${runs.length} løpeturer</div>
+    </div>
+    <div class="garmin-stat">
+      <div class="garmin-stat-val" style="color:var(--accent)">${avgPaceStr}</div>
+      <div class="garmin-stat-label">SNITT PACE /km</div>
+      <div class="garmin-stat-sub">Alle løpeturer</div>
+    </div>
+    <div class="garmin-stat">
+      <div class="garmin-stat-val" style="color:var(--bike)">${Math.round(avgHR)||'—'}</div>
+      <div class="garmin-stat-label">SNITT PULS</div>
+      <div class="garmin-stat-sub">bpm løping</div>
+    </div>
+    <div class="garmin-stat">
+      <div class="garmin-stat-val" style="color:var(--swim)">${bestPaceRun ? bestPaceRun.pace : '—'}</div>
+      <div class="garmin-stat-label">BESTE PACE</div>
+      <div class="garmin-stat-sub">${bestPaceRun ? bestPaceRun.km+'km ' + new Date(bestPaceRun.date).toLocaleDateString('no',{day:'numeric',month:'short'}) : ''}</div>
+    </div>
+  `;
+
+  // Activity list
+  const gl = document.getElementById('garmin-list');
+  gl.innerHTML = '';
+  GARMIN_ACTS.forEach((act, idx) => {
+    const match = matchToPlan(act);
+    const el = document.createElement('div');
+    el.className = 'garmin-activity';
+    const dt = new Date(act.date).toLocaleDateString('no',{weekday:'short',day:'numeric',month:'short'});
+
+    let statsHtml = '';
+    if(act.km) statsHtml += `<div class="garmin-act-stat"><span>${act.km} km</span></div>`;
+    if(act.time) statsHtml += `<div class="garmin-act-stat"><span>${act.time}</span></div>`;
+    if(act.pace) statsHtml += `<div class="garmin-act-stat"><span>${act.pace}/km</span></div>`;
+    if(act.hr) statsHtml += `<div class="garmin-act-stat">❤️ <span>${act.hr}</span></div>`;
+    if(act.speed) statsHtml += `<div class="garmin-act-stat"><span>${act.speed} km/t</span></div>`;
+
+    const matchBadge = match
+      ? `<div class="garmin-act-badge" style="background:rgba(45,198,83,0.15);color:var(--run)">✓ Plan U${match.week}</div>`
+      : '';
+
+    el.innerHTML = `
+      <div class="garmin-act-icon" style="background:${garminBg(act.type)}">${garminEmoji(act.type)}</div>
+      <div class="garmin-act-info">
+        <div class="garmin-act-name">${act.name}</div>
+        <div class="garmin-act-meta">${dt}</div>
+        <div class="garmin-act-stats">${statsHtml}</div>
+      </div>
+      ${matchBadge}
+    `;
+    el.onclick = () => openGarminDetail(idx);
+    gl.appendChild(el);
+  });
+
+  // Sync time
+  if(garminSyncTime){
+    document.getElementById('garmin-sync-time').textContent = 'Sist synket: ' + new Date(garminSyncTime).toLocaleString('no',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  }
+}
+
+function openGarminDetail(idx){
+  const act = GARMIN_ACTS[idx];
+  const match = matchToPlan(act);
+  const zones = act.type==='run' && act.hr ? analyzeRun(act) : null;
+  const dt = new Date(act.date).toLocaleDateString('no',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  let html = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+      <div style="width:56px;height:56px;border-radius:16px;background:${garminBg(act.type)};display:flex;align-items:center;justify-content:center;font-size:28px">${garminEmoji(act.type)}</div>
+      <div>
+        <div style="font-size:20px;font-weight:900">${act.name}</div>
+        <div style="font-size:12px;color:var(--muted2);margin-top:3px">${dt}</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+  `;
+  if(act.km) html += `<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:${garminColor(act.type)}">${act.km}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">KM</div></div>`;
+  if(act.time) html += `<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.time}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">TID</div></div>`;
+  if(act.pace) html += `<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.pace}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">/KM</div></div>`;
+  if(act.hr) html += `<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--accent)">${act.hr}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">PULS BPM</div></div>`;
+  if(act.elev) html += `<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.elev}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">STIGNING m</div></div>`;
+  if(act.speed) html += `<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.speed}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">KM/T</div></div>`;
+  if(act.kcal) html += `<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.kcal}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">KCAL</div></div>`;
+  html += '</div>';
+
+  if(zones){
+    html += `<div class="workout-block"><h4>PULSSONER (estimert)</h4>
+      <div class="garmin-hr-zones">
+        ${zones.map((z,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center">
+          <div style="width:100%;background:${z.color};border-radius:4px 4px 0 0;height:${z.pct*0.8+8}px;opacity:0.85"></div>
+          <div style="font-size:8px;color:var(--muted2);margin-top:3px">${z.name}<br>${z.pct}%</div>
+        </div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:8px">Basert på snittpuls ${act.hr} bpm · Estimert fordeling</div>
+    </div>`;
+  }
+
+  if(act.type==='run' && act.pace){
+    const paceSec = paceToSec(act.pace);
+    const ironmanTargetSec = 6*60; // 6:00/km target for ironman run
+    const diff = ironmanTargetSec - paceSec;
+    const analysis = diff > 0
+      ? `✅ ${Math.abs(diff)}s raskere enn Ironman-mål (6:00/km). Du er i rute!`
+      : diff === 0
+      ? `✅ Nøyaktig på Ironman-mål (6:00/km).`
+      : `⚠️ ${Math.abs(diff)}s tregere enn Ironman-mål (6:00/km). Men husk dette er på friske bein – etter 180km sykkel er 6:00/km gull.`;
+    html += `<div class="${diff>=0?'garmin-match':'garmin-nomatch'}">🎯 Ironman-analyse: ${analysis}</div>`;
+  }
+
+  if(match){
+    html += `<div class="garmin-match">📋 Matcher treningsplan uke ${match.week}: ${match.planned.name} — ${match.planned.detail}</div>`;
+  } else if(new Date(act.date) >= new Date('2026-06-28')) {
+    html += `<div class="garmin-nomatch">📋 Ingen direkte match i treningsplanen for denne dagen</div>`;
+  }
+
+  document.getElementById('garmin-modal-content').innerHTML = html;
+  document.getElementById('garmin-modal').classList.add('open');
+}
+
+function closeGarminModal(e){
+  if(e.target===document.getElementById('garmin-modal')) document.getElementById('garmin-modal').classList.remove('open');
+}
+
+async function syncGarmin(){
+  const btn = document.getElementById('garmin-sync-btn');
+  btn.textContent = '⟳ Henter...';
+  btn.classList.add('syncing');
+
+  try {
+    // Try the Vercel API endpoint (alternativ 3 - automatisk)
+    const resp = await fetch('/api/garmin', {signal: AbortSignal.timeout(8000)});
+    if(resp.ok){
+      const data = await resp.json();
+      if(data.activities && data.activities.length){
+        GARMIN_ACTS = data.activities;
+        garminSyncTime = new Date().toISOString();
+        localStorage.setItem('garmin_acts', JSON.stringify(GARMIN_ACTS));
+        localStorage.setItem('garmin_sync_time', garminSyncTime);
+        renderGarmin();
+        btn.textContent = '✓ Synket!';
+        setTimeout(()=>{btn.textContent='⟳ Synk nå';btn.classList.remove('syncing');},2000);
+        return;
+      }
+    }
+  } catch(e){}
+
+  // Fallback: data from seed
+  btn.textContent = '⚠️ API ikke satt opp';
+  btn.classList.remove('syncing');
+  setTimeout(()=>{btn.textContent='⟳ Synk nå';},3000);
+}
+
 </body>
 </html>
