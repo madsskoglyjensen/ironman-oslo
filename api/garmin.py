@@ -9,6 +9,7 @@ try:
 except ImportError:
     HAS_GARMIN = False
 
+
 def map_type(activity_type):
     t = (activity_type or '').lower()
     if 'running' in t or 'run' in t: return 'run'
@@ -19,6 +20,40 @@ def map_type(activity_type):
     if 'skiing' in t or 'ski' in t: return 'ski'
     if 'soccer' in t or 'football' in t: return 'soccer'
     return 'other'
+
+
+def get_mfa_callback():
+    """Returns a callable MFA function if TOTP secret is available."""
+    totp_secret = os.environ.get('GARMIN_TOTP_SECRET')
+    if totp_secret:
+        try:
+            import pyotp
+            def callback():
+                return pyotp.TOTP(totp_secret).now()
+            return callback
+        except ImportError:
+            pass
+    return None
+
+
+def make_api():
+    """Create and login Garmin API using token store (preferred) or email/password."""
+    email = os.environ.get('Garmin_EMAIL') or os.environ.get('GARMIN_EMAIL', '')
+    password = os.environ.get('Garmin_Password') or os.environ.get('GARMIN_PASSWORD', '')
+    tokens_b64 = os.environ.get('GARMIN_TOKENS_B64')
+
+    mfa_cb = get_mfa_callback()
+    api = Garmin(email=email, password=password, is_cn=False, prompt_mfa=mfa_cb)
+
+    if tokens_b64:
+        # Token-based login — no MFA prompt needed
+        api.login(tokenstore_base64=tokens_b64)
+    else:
+        # Email/password — will raise if MFA required and no TOTP secret set
+        api.login()
+
+    return api
+
 
 def get_activities(api):
     raw = api.get_activities(0, 20)
@@ -37,7 +72,7 @@ def get_activities(api):
         pace = None; speed = None
         if act_type in ('run', 'swim', 'hike') and avg_speed and avg_speed > 0:
             pace_sec = 1000 / avg_speed
-            pace = f"{int(pace_sec//60)}:{int(pace_sec%60):02d}"
+            pace = f"{int(pace_sec // 60)}:{int(pace_sec % 60):02d}"
         elif avg_speed:
             speed = round(avg_speed * 3.6, 1)
         cadence = a.get('averageRunningCadenceInStepsPerMinute')
@@ -66,9 +101,11 @@ def get_activities(api):
         })
     return activities
 
+
 def get_body_data(api):
     today = date.today().isoformat()
     result = {}
+
     try:
         sleep = api.get_sleep_data(today)
         sd = sleep.get('dailySleepDTO', {})
@@ -85,6 +122,7 @@ def get_body_data(api):
         }
     except Exception as e:
         result['sleep'] = {'error': str(e)}
+
     try:
         bb_list = api.get_body_battery([today])
         if bb_list:
@@ -97,6 +135,7 @@ def get_body_data(api):
             }
     except Exception as e:
         result['bodyBattery'] = {'error': str(e)}
+
     try:
         hrv = api.get_hrv_data(today)
         s = hrv.get('hrvSummary', {})
@@ -108,6 +147,7 @@ def get_body_data(api):
         }
     except Exception as e:
         result['hrv'] = {'error': str(e)}
+
     try:
         tr_list = api.get_training_readiness(today)
         if tr_list:
@@ -119,18 +159,21 @@ def get_body_data(api):
             }
     except Exception as e:
         result['trainingReadiness'] = {'error': str(e)}
+
     try:
         rhr = api.get_rhr_day(today)
         result['rhr'] = {'value': (rhr.get('allDayHR') or {}).get('restingHeartRate')}
     except Exception as e:
         result['rhr'] = {'error': str(e)}
+
     try:
         stress = api.get_all_day_stress(today)
         vals = stress.get('stressValuesArray', [])
         valid = [v[1] for v in vals if v[1] is not None and v[1] >= 0]
-        result['stress'] = {'avg': round(sum(valid)/len(valid)) if valid else None}
+        result['stress'] = {'avg': round(sum(valid) / len(valid)) if valid else None}
     except Exception as e:
         result['stress'] = {'error': str(e)}
+
     try:
         metrics = api.get_max_metrics(today)
         if metrics:
@@ -141,6 +184,7 @@ def get_body_data(api):
             }
     except Exception as e:
         result['maxMetrics'] = {'error': str(e)}
+
     try:
         preds = api.get_race_predictions()
         result['racePredictions'] = {
@@ -151,7 +195,9 @@ def get_body_data(api):
         }
     except Exception as e:
         result['racePredictions'] = {'error': str(e)}
+
     return result
+
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -159,19 +205,31 @@ class handler(BaseHTTPRequestHandler):
         password = os.environ.get('Garmin_Password') or os.environ.get('GARMIN_PASSWORD')
         qs = parse_qs(urlparse(self.path).query)
         data_type = qs.get('type', ['activities'])[0]
+
         if not email or not password:
             return self._respond(503, {'error': 'Garmin credentials not configured'})
         if not HAS_GARMIN:
             return self._respond(503, {'error': 'garminconnect not installed'})
+
+        tokens_b64 = os.environ.get('GARMIN_TOKENS_B64')
+        hint = ('Add GARMIN_TOKENS_B64 to Vercel env vars. '
+                'Run generate_tokens.py locally to create it. '
+                'Or set GARMIN_TOTP_SECRET if you have your authenticator secret.')
+        if not tokens_b64:
+            return self._respond(401, {
+                'error': 'MFA auth required — no token store configured',
+                'hint': hint,
+            })
+
         try:
-            api = Garmin(email, password)
-            api.login()
+            api = make_api()
             if data_type == 'body':
                 self._respond(200, get_body_data(api))
             else:
                 self._respond(200, {'activities': get_activities(api)})
         except Exception as e:
-            self._respond(500, {'error': str(e)})
+            self._respond(500, {'error': str(e), 'hint': hint})
+
     def _respond(self, code, data):
         body = json.dumps(data).encode()
         self.send_response(code)
@@ -180,4 +238,6 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
-    def log_message(self, format, *args): pass
+
+    def log_message(self, format, *args):
+        pass
