@@ -10,13 +10,15 @@
 <title>IRONMAN OSLO</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+button, [onclick] { touch-action:manipulation; cursor:pointer; }
+input, select, textarea { touch-action:manipulation; }
 :root {
   --bg:#0a0a0a; --surface:#141414; --surface2:#1e1e1e; --border:#2a2a2a;
   --text:#f0f0f0; --muted:#555; --muted2:#888;
   --swim:#00b4d8; --bike:#f77f00; --run:#2dc653; --brick:#c77dff; --rest:#333; --race:#e63946;
   --accent:#e63946;
 }
-body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif; min-height:100vh; padding-bottom:90px; }
+body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif; min-height:100vh; padding-bottom:max(90px, calc(70px + env(safe-area-inset-bottom))); }
 
 /* HEADER */
 .header { padding:54px 20px 12px; }
@@ -192,8 +194,8 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 .garmin-nomatch { background:rgba(247,127,0,0.08); border:1px solid rgba(247,127,0,0.2); border-radius:12px; padding:10px 14px; margin:12px 0; font-size:12px; color:var(--bike); font-weight:600; }
 
 /* NAV */
-.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:rgba(10,10,10,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; padding:10px 0 22px; z-index:50; }
-.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:6px; color:var(--muted2); transition:color 0.15s; }
+.bottom-nav { position:fixed; bottom:0; left:0; right:0; background:rgba(10,10,10,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; padding:10px 0 max(22px, env(safe-area-inset-bottom)); z-index:50; }
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:8px 4px; color:var(--muted2); transition:color 0.15s; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
 .nav-item.active { color:var(--accent); }
 .nav-icon { font-size:22px; }
 .nav-label { font-size:9px; font-weight:800; letter-spacing:1px; }
@@ -376,7 +378,7 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 
 <!-- GARMIN DETAIL MODAL -->
 <div class="modal-overlay" id="garmin-modal" onclick="closeGarminModal(event)">
-  <div class="garmin-detail-modal">
+  <div class="garmin-detail-modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div id="garmin-modal-content"></div>
     <button class="modal-btn secondary" onclick="document.getElementById('garmin-modal').classList.remove('open')" style="margin-top:12px">Lukk</button>
@@ -606,7 +608,7 @@ function render(){
 
   // Form buttons
   document.querySelectorAll('.form-btn').forEach(b=>{
-    const f=b.getAttribute('onclick').match(/'(\w+)'/)?.[1];
+    const f=b.getAttribute('onclick').match(/'([^']+)'/)?.[1];
     b.classList.toggle('active', S.form===f);
   });
 
@@ -783,6 +785,9 @@ function closeModalBg(e){if(e.target===document.getElementById('modal'))closeMod
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
 function showPage(name){
+  // Close any open modals first so they don't block taps
+  closeModal();
+  document.getElementById('garmin-modal').classList.remove('open');
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
@@ -1024,10 +1029,11 @@ async function syncGarmin(){
   btn.classList.add('syncing');
 
   try {
-    // Try the Vercel API endpoint (alternativ 3 - automatisk)
-    const resp = await fetch('/api/garmin', {signal: AbortSignal.timeout(8000)});
-    if(resp.ok){
-      const data = await resp.json();
+    const resp = await fetch('/api/garmin', {signal: AbortSignal.timeout(10000)});
+    const text = await resp.text();
+    // Guard: make sure it's JSON, not an HTML error page
+    if(resp.ok && text.trim().startsWith('{')){
+      const data = JSON.parse(text);
       if(data.activities && data.activities.length){
         GARMIN_ACTS = data.activities;
         garminSyncTime = new Date().toISOString();
@@ -1039,12 +1045,12 @@ async function syncGarmin(){
         return;
       }
     }
-  } catch(e){}
+  } catch(e){ /* network error or timeout — fall through */ }
 
-  // Fallback: data from seed
-  btn.textContent = '⚠️ API ikke satt opp';
+  // Fallback: use cached/seed data silently
+  btn.textContent = '📡 Bruker cachedata';
   btn.classList.remove('syncing');
-  setTimeout(()=>{btn.textContent='⟳ Synk nå';},3000);
+  setTimeout(()=>{btn.textContent='⟳ Synk nå';},2500);
 }
 
 </body>
