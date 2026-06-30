@@ -166,6 +166,49 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 /* EMPTY */
 .empty { text-align:center; padding:60px 20px; color:var(--muted2); font-size:14px; line-height:1.8; }
 
+/* READINESS CARD (home screen) */
+.readiness-card { margin:0 20px 16px; border-radius:18px; overflow:hidden; background:var(--surface); }
+.readiness-top { padding:16px 18px 12px; display:flex; align-items:center; gap:16px; }
+.readiness-ring-wrap { position:relative; width:70px; height:70px; flex-shrink:0; }
+.readiness-ring-wrap svg { transform:rotate(-90deg); }
+.readiness-ring-val { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; }
+.readiness-info { flex:1; }
+.readiness-label { font-size:10px; font-weight:700; letter-spacing:2px; color:var(--muted2); }
+.readiness-title { font-size:18px; font-weight:900; margin-top:3px; }
+.readiness-sub { font-size:12px; color:var(--muted2); margin-top:3px; }
+.readiness-pills { display:flex; gap:8px; padding:0 18px 16px; flex-wrap:wrap; }
+.readiness-pill { display:flex; align-items:center; gap:6px; background:var(--surface2); border-radius:20px; padding:6px 12px; }
+.readiness-pill-val { font-size:13px; font-weight:900; }
+.readiness-pill-label { font-size:10px; color:var(--muted2); font-weight:600; }
+
+/* KROPP */
+.kropp-big { margin:0 20px 16px; background:var(--surface); border-radius:18px; padding:20px; display:flex; align-items:center; gap:20px; }
+.kropp-ring-wrap { position:relative; width:90px; height:90px; flex-shrink:0; }
+.kropp-ring-wrap svg { transform:rotate(-90deg); }
+.kropp-ring-val { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.kropp-ring-num { font-size:26px; font-weight:900; }
+.kropp-ring-sub { font-size:9px; color:var(--muted2); font-weight:700; letter-spacing:1px; }
+.kropp-info { flex:1; }
+.kropp-status-title { font-size:18px; font-weight:900; }
+.kropp-status-sub { font-size:12px; color:var(--muted2); margin-top:4px; line-height:1.5; }
+.kropp-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin:0 20px 16px; }
+.kropp-card { background:var(--surface); border-radius:16px; padding:16px 14px; }
+.kropp-card-val { font-size:28px; font-weight:900; }
+.kropp-card-label { font-size:9px; font-weight:700; letter-spacing:1px; color:var(--muted2); margin-top:4px; }
+.kropp-card-sub { font-size:11px; color:var(--muted2); margin-top:4px; }
+.kropp-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:800; margin-top:6px; }
+.badge-green { background:rgba(45,198,83,0.15); color:var(--run); }
+.badge-yellow { background:rgba(247,127,0,0.15); color:var(--bike); }
+.badge-red { background:rgba(230,57,70,0.15); color:var(--accent); }
+.badge-grey { background:var(--surface2); color:var(--muted2); }
+.sleep-bar { display:flex; height:10px; border-radius:99px; overflow:hidden; gap:2px; margin:10px 0 4px; }
+.sleep-seg { border-radius:99px; }
+.kropp-rec { margin:0 20px 16px; border-radius:16px; padding:16px 18px; }
+.kropp-rec-title { font-size:14px; font-weight:900; margin-bottom:6px; }
+.kropp-rec-text { font-size:13px; line-height:1.6; }
+.kropp-rec-bullets { margin-top:10px; display:flex; flex-direction:column; gap:6px; }
+.kropp-rec-bullet { font-size:12px; color:var(--muted2); }
+
 /* GARMIN */
 .garmin-header { margin:0 20px 16px; display:flex; align-items:center; justify-content:space-between; }
 .garmin-sync-btn { background:var(--surface2); border:1px solid var(--border); color:var(--muted2); font-size:11px; font-weight:700; padding:7px 14px; border-radius:20px; cursor:pointer; letter-spacing:0.5px; }
@@ -222,6 +265,25 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
   </div>
 
   <div class="quote" id="quote"></div>
+
+  <!-- READINESS CARD -->
+  <div class="readiness-card" id="readiness-card" onclick="showPage('kropp')" style="cursor:pointer">
+    <div class="readiness-top">
+      <div class="readiness-ring-wrap">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle cx="35" cy="35" r="28" fill="none" stroke="var(--surface2)" stroke-width="7"/>
+          <circle id="r-ring" cx="35" cy="35" r="28" fill="none" stroke="#555" stroke-width="7" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="176"/>
+        </svg>
+        <div class="readiness-ring-val" id="r-val">—</div>
+      </div>
+      <div class="readiness-info">
+        <div class="readiness-label">DAGENS READINESS</div>
+        <div class="readiness-title" id="r-title">Henter data...</div>
+        <div class="readiness-sub" id="r-sub">Trykk for full oversikt</div>
+      </div>
+    </div>
+    <div class="readiness-pills" id="r-pills"></div>
+  </div>
 
   <div class="phase-banner">
     <div class="phase-icon" id="phase-icon">🏗️</div>
@@ -358,6 +420,98 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
   <div id="history-list"><div class="empty">Ingen økter logget ennå.<br>Start din første økt! 🏊</div></div>
 </div>
 
+<!-- KROPP -->
+<div id="page-kropp" class="page">
+  <div class="header">
+    <div class="app-eyebrow">RECOVERY & READINESS</div>
+    <div class="app-title">Kropp</div>
+  </div>
+  <div style="margin:0 20px 12px;display:flex;justify-content:space-between;align-items:center">
+    <div id="kropp-sync-time" style="font-size:10px;color:var(--muted)">Laster...</div>
+    <button class="garmin-sync-btn" onclick="syncBodyData()" id="kropp-sync-btn">⟳ Oppdater</button>
+  </div>
+
+  <!-- Body Battery stor ring -->
+  <div class="kropp-big" id="kropp-bb-card">
+    <div class="kropp-ring-wrap">
+      <svg width="90" height="90" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="36" fill="none" stroke="var(--surface2)" stroke-width="8"/>
+        <circle id="bb-ring" cx="45" cy="45" r="36" fill="none" stroke="#2dc653" stroke-width="8" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"/>
+      </svg>
+      <div class="kropp-ring-val">
+        <div class="kropp-ring-num" id="bb-val">—</div>
+        <div class="kropp-ring-sub">BODY BAT</div>
+      </div>
+    </div>
+    <div class="kropp-info">
+      <div class="kropp-status-title" id="bb-status">Laster...</div>
+      <div class="kropp-status-sub" id="bb-rec"></div>
+    </div>
+  </div>
+
+  <!-- Grid: HRV, Søvn, RHR, Stress -->
+  <div class="kropp-grid">
+    <div class="kropp-card">
+      <div class="kropp-card-label">HRV STATUS</div>
+      <div class="kropp-card-val" id="hrv-val">—</div>
+      <div id="hrv-badge"></div>
+      <div class="kropp-card-sub" id="hrv-sub"></div>
+    </div>
+    <div class="kropp-card">
+      <div class="kropp-card-label">SØVNSCORE</div>
+      <div class="kropp-card-val" id="sleep-score">—</div>
+      <div class="kropp-card-sub" id="sleep-hours"></div>
+      <div id="sleep-badge"></div>
+    </div>
+    <div class="kropp-card">
+      <div class="kropp-card-label">HVILEPULS</div>
+      <div class="kropp-card-val" style="color:var(--accent)" id="rhr-val">—</div>
+      <div class="kropp-card-sub" id="rhr-sub">bpm</div>
+    </div>
+    <div class="kropp-card">
+      <div class="kropp-card-label">STRESS SNITT</div>
+      <div class="kropp-card-val" id="stress-val">—</div>
+      <div class="kropp-card-sub" id="stress-sub"></div>
+    </div>
+  </div>
+
+  <!-- Søvnfaser -->
+  <div class="section-title">SØVNFASER</div>
+  <div style="margin:0 20px 16px;background:var(--surface);border-radius:16px;padding:16px">
+    <div class="sleep-bar" id="sleep-bar"></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px" id="sleep-legend"></div>
+  </div>
+
+  <!-- VO2max + Race predictions -->
+  <div class="section-title">FORM & PROGRESJON</div>
+  <div class="kropp-grid">
+    <div class="kropp-card">
+      <div class="kropp-card-label">VO2MAX</div>
+      <div class="kropp-card-val" style="color:var(--swim)" id="vo2-val">—</div>
+      <div class="kropp-card-sub" id="vo2-sub">ml/kg/min</div>
+    </div>
+    <div class="kropp-card">
+      <div class="kropp-card-label">KONDIALDER</div>
+      <div class="kropp-card-val" style="color:var(--run)" id="fitness-age">—</div>
+      <div class="kropp-card-sub">år</div>
+    </div>
+  </div>
+
+  <!-- Race predictions -->
+  <div style="margin:0 20px 16px;background:var(--surface);border-radius:16px;padding:16px">
+    <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted2);margin-bottom:12px">RACE PREDICTIONS (Garmin)</div>
+    <div id="race-preds" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+
+  <!-- Anbefaling -->
+  <div class="section-title">DAGENS ANBEFALING</div>
+  <div class="kropp-rec" id="kropp-rec-card">
+    <div class="kropp-rec-title" id="kropp-rec-title">Analyserer...</div>
+    <div class="kropp-rec-text" id="kropp-rec-text"></div>
+    <div class="kropp-rec-bullets" id="kropp-rec-bullets"></div>
+  </div>
+</div>
+
 <!-- GARMIN -->
 <div id="page-garmin" class="page">
   <div class="header">
@@ -388,8 +542,9 @@ body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkM
 <!-- NAV -->
 <div class="bottom-nav">
   <div class="nav-item active" onclick="showPage('home')" id="nav-home"><div class="nav-icon">🏠</div><div class="nav-label">HJEM</div></div>
-  <div class="nav-item" onclick="showPage('tracker')" id="nav-tracker"><div class="nav-icon">📊</div><div class="nav-label">TRACKER</div></div>
+  <div class="nav-item" onclick="showPage('kropp')" id="nav-kropp"><div class="nav-icon">❤️</div><div class="nav-label">KROPP</div></div>
   <div class="nav-item" onclick="showPage('garmin')" id="nav-garmin"><div class="nav-icon">⌚</div><div class="nav-label">GARMIN</div></div>
+  <div class="nav-item" onclick="showPage('tracker')" id="nav-tracker"><div class="nav-icon">📊</div><div class="nav-label">TRACKER</div></div>
   <div class="nav-item" onclick="showPage('history')" id="nav-history"><div class="nav-icon">📋</div><div class="nav-label">HISTORIKK</div></div>
 </div>
 
@@ -793,12 +948,13 @@ function showPage(name){
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('nav-'+name).classList.add('active');
   if(name==='garmin') renderGarmin();
+  if(name==='kropp') renderBodyData();
 }
 
 function setForm(f){S.form=f;save();render();}
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-S.week=autoWeek(); save(); render();
+S.week=autoWeek(); save(); render(); renderBodyData();
 
 // ── GARMIN ────────────────────────────────────────────────────────────────────
 // Scraped from connect.garmin.com — dine faktiske aktiviteter
@@ -1053,6 +1209,267 @@ async function syncGarmin(){
   setTimeout(()=>{btn.textContent='⟳ Synk nå';},2500);
 }
 
-</script>
+// ── KROPP / BODY DATA ─────────────────────────────────────────────────────────
+let BODY_DATA = JSON.parse(localStorage.getItem('garmin_body')||'null');
+let bodySyncTime = localStorage.getItem('garmin_body_time') || null;
+
+function secToHM(s){ if(!s) return '—'; const h=Math.floor(s/3600),m=Math.floor((s%3600)/60); return `${h}t ${m}m`; }
+function secsToHours(s){ return s ? Math.round(s/360)/10 : 0; }
+
+function hrvColor(status){
+  if(!status) return 'var(--muted2)';
+  const s = status.toLowerCase();
+  if(s.includes('balanced') || s.includes('green')) return 'var(--run)';
+  if(s.includes('unbalanced') || s.includes('yellow') || s.includes('low')) return 'var(--bike)';
+  if(s.includes('poor') || s.includes('red')) return 'var(--accent)';
+  return 'var(--muted2)';
+}
+function hrvLabel(status){
+  if(!status) return '—';
+  const s = status.toLowerCase();
+  if(s.includes('balanced')) return '✅ Balansert';
+  if(s.includes('unbalanced')) return '⚠️ Ubalansert';
+  if(s.includes('poor')) return '🔴 Svak';
+  return status;
+}
+function bbColor(v){ if(!v) return '#555'; if(v>=75) return 'var(--run)'; if(v>=45) return 'var(--bike)'; return 'var(--accent)'; }
+function bbStatus(v){
+  if(!v) return ['Ingen data', 'Henter fra Garmin...'];
+  if(v>=75) return ['🔋 Klar til å trene hardt', 'Body Battery høy — kjør på planlagt økt med full innsats'];
+  if(v>=55) return ['💪 Moderat klar', 'Greit å trene, men ikke push til grensen i dag'];
+  if(v>=35) return ['😴 Lett trening', 'Prioriter teknikk eller rolig økt — kroppen trenger å lade'];
+  return ['🔴 Hvile i dag', 'Body Battery kritisk lav — lett gå eller full hvile. Recovery er trening.'];
+}
+function sleepLabel(score){
+  if(!score) return ['—', 'grey'];
+  if(score>=80) return ['Utmerket', 'green'];
+  if(score>=65) return ['Bra', 'green'];
+  if(score>=50) return ['OK', 'yellow'];
+  return ['Dårlig', 'red'];
+}
+
+function generateRec(data){
+  const bb = data?.bodyBattery?.current;
+  const hrv = data?.hrv?.status;
+  const sleep = data?.sleep?.score;
+  const rhr = data?.rhr?.value;
+  const tr = data?.trainingReadiness?.score;
+
+  let title, text, bullets = [];
+
+  // Combine signals
+  const signals = {
+    bbGood: bb >= 65, bbLow: bb < 40,
+    hrvGood: hrv && hrv.toLowerCase().includes('balanced'),
+    hrvBad: hrv && (hrv.toLowerCase().includes('poor') || hrv.toLowerCase().includes('unbalanced')),
+    sleepGood: sleep >= 70, sleepBad: sleep < 55,
+  };
+
+  const readyScore = [signals.bbGood, signals.hrvGood, signals.sleepGood].filter(Boolean).length
+                   - [signals.bbLow, signals.hrvBad, signals.sleepBad].filter(Boolean).length;
+
+  if(readyScore >= 2){
+    title = '🔥 Push i dag';
+    text = 'Kroppen din er klar for belastning. Følg planen og tren med høy innsats.';
+    bullets = [
+      '→ Løp: target under 4:30/km på tempoøkt',
+      '→ Sykkel: prøv å holde høyere kadens (90+ RPM)',
+      '→ Svøm: fokus på SWOLF — tell slag per basseng',
+    ];
+  } else if(readyScore >= 0){
+    title = '💪 Moderat trening';
+    text = 'Noen signaler er gode, noen er nøytrale. Tren som planlagt, men ikke overkjør.';
+    bullets = [
+      '→ Hold deg i sone 2 (aerob) — ikke push til sone 4+',
+      '→ Teknikk og form framfor tempo i dag',
+      '→ Vurder å avslutte litt tidligere enn planlagt',
+    ];
+  } else {
+    title = '😴 Hvil eller lett økt';
+    text = 'Kroppen signaliserer at den trenger restitusjon. En hard økt i dag gir tilbakegang, ikke fremgang.';
+    bullets = [
+      '→ Maks 30 min rolig gange eller lett svømming',
+      '→ Prioriter søvn i kveld — legg deg 1t tidligere',
+      '→ God hvile i dag = sterkere økt i morgen',
+    ];
+  }
+
+  // Specific technique tips
+  if(data?.activities?.length){
+    const lastRun = data.activities.find(a=>a.type==='run' && a.cadence);
+    if(lastRun && lastRun.cadence < 170){
+      bullets.push(`→ Kadensfokus: siste løp ${lastRun.cadence} spm — jobb mot 174–180 spm`);
+    }
+    const lastSwim = data.activities.find(a=>a.type==='swim' && a.swolf);
+    if(lastSwim){
+      bullets.push(`→ Svøm-SWOLF: ${lastSwim.swolf} (under 35 = god effektivitet)`);
+    }
+  }
+
+  return { title, text, bullets };
+}
+
+function renderBodyData(){
+  const data = BODY_DATA;
+  if(!data){
+    document.getElementById('kropp-sync-time').textContent = 'Trykk Oppdater for å hente Garmin-data';
+    return;
+  }
+
+  if(bodySyncTime){
+    document.getElementById('kropp-sync-time').textContent = 'Sist synket: ' + new Date(bodySyncTime).toLocaleString('no',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+  }
+
+  // Body Battery ring
+  const bb = data.bodyBattery?.current;
+  const bbMax = 176; // circumference
+  const bbOffset = bb ? bbMax - (bb/100)*bbMax : bbMax;
+  const bbRing = document.getElementById('bb-ring');
+  const [bbTitle, bbRec] = bbStatus(bb);
+  if(bbRing){
+    bbRing.style.stroke = bbColor(bb);
+    bbRing.style.strokeDashoffset = bbOffset;
+  }
+  const bbEl = document.getElementById('bb-val');
+  if(bbEl){ bbEl.textContent = bb || '—'; bbEl.style.color = bbColor(bb); }
+  const bbs = document.getElementById('bb-status');
+  const bbr = document.getElementById('bb-rec');
+  if(bbs) bbs.textContent = bbTitle;
+  if(bbr) bbr.textContent = bbRec;
+
+  // Readiness card on home
+  const rVal = data.trainingReadiness?.score || bb;
+  const rRing = document.getElementById('r-ring');
+  const rValEl = document.getElementById('r-val');
+  const rTitle = document.getElementById('r-title');
+  const rSub = document.getElementById('r-sub');
+  if(rRing && rVal){
+    const rOffset = 176 - (rVal/100)*176;
+    rRing.style.strokeDashoffset = rOffset;
+    rRing.style.stroke = bbColor(rVal);
+  }
+  if(rValEl) { rValEl.textContent = rVal || '—'; if(rVal) rValEl.style.color = bbColor(rVal); }
+  if(rTitle){ const [st] = bbStatus(rVal); rTitle.textContent = st; }
+  if(rSub) rSub.textContent = 'Body Battery: ' + (bb||'—') + ' · Trykk for detaljer';
+
+  // Pills on home
+  const pills = document.getElementById('r-pills');
+  if(pills){
+    const hrvS = data.hrv?.status;
+    const slS = data.sleep?.score;
+    const rhrV = data.rhr?.value;
+    pills.innerHTML = [
+      slS ? `<div class="readiness-pill"><span class="readiness-pill-val">😴 ${slS}</span><span class="readiness-pill-label">SØVN</span></div>` : '',
+      hrvS ? `<div class="readiness-pill"><span class="readiness-pill-val" style="color:${hrvColor(hrvS)}">HRV</span><span class="readiness-pill-label">${hrvS.replace('HRV_','')}</span></div>` : '',
+      rhrV ? `<div class="readiness-pill"><span class="readiness-pill-val" style="color:var(--accent)">❤️ ${rhrV}</span><span class="readiness-pill-label">RHR</span></div>` : '',
+    ].join('');
+  }
+
+  // HRV
+  const hrv = data.hrv || {};
+  const hrvValEl = document.getElementById('hrv-val');
+  const hrvBadge = document.getElementById('hrv-badge');
+  if(hrvValEl) { hrvValEl.textContent = hrv.lastNight || '—'; hrvValEl.style.color = hrvColor(hrv.status); }
+  if(hrvBadge) hrvBadge.innerHTML = `<div class="kropp-badge badge-${hrv.status?.toLowerCase().includes('balanced')?'green':hrv.status?.toLowerCase().includes('poor')?'red':'yellow'}">${hrvLabel(hrv.status)}</div>`;
+  const hrvSub = document.getElementById('hrv-sub');
+  if(hrvSub) hrvSub.textContent = hrv.weeklyAvg ? `Ukesnitt: ${hrv.weeklyAvg} ms` : '';
+
+  // Sleep
+  const sl = data.sleep || {};
+  const slScore = document.getElementById('sleep-score');
+  const slHours = document.getElementById('sleep-hours');
+  const slBadge = document.getElementById('sleep-badge');
+  const [slLabel, slColor] = sleepLabel(sl.score);
+  if(slScore){ slScore.textContent = sl.score || '—'; slScore.style.color = slColor==='green'?'var(--run)':slColor==='yellow'?'var(--bike)':'var(--accent)'; }
+  if(slHours) slHours.textContent = `${sl.durationHours || '—'} timer`;
+  if(slBadge) slBadge.innerHTML = `<div class="kropp-badge badge-${slColor}">${slLabel}</div>`;
+
+  // Sleep bar
+  const total = (sl.deepSec||0) + (sl.remSec||0) + (sl.lightSec||0) + (sl.awakeSec||0);
+  const slBar = document.getElementById('sleep-bar');
+  const slLeg = document.getElementById('sleep-legend');
+  if(slBar && total > 0){
+    const segs = [
+      {label:'Dyp', sec:sl.deepSec, color:'#00b4d8'},
+      {label:'REM', sec:sl.remSec, color:'#c77dff'},
+      {label:'Lett', sec:sl.lightSec, color:'#2dc653'},
+      {label:'Våken', sec:sl.awakeSec, color:'#333'},
+    ];
+    slBar.innerHTML = segs.map(s=>s.sec?`<div class="sleep-seg" style="flex:${s.sec};background:${s.color}"></div>`:'').join('');
+    slLeg.innerHTML = segs.map(s=>s.sec?`<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted2)"><div style="width:8px;height:8px;border-radius:2px;background:${s.color}"></div>${s.label} ${secToHM(s.sec)}</div>`:'').join('');
+  }
+
+  // RHR
+  const rhrEl = document.getElementById('rhr-val');
+  if(rhrEl) rhrEl.textContent = data.rhr?.value || '—';
+
+  // Stress
+  const stressEl = document.getElementById('stress-val');
+  const stressSub = document.getElementById('stress-sub');
+  const st = data.stress?.avg;
+  if(stressEl){ stressEl.textContent = st || '—'; stressEl.style.color = st>60?'var(--accent)':st>35?'var(--bike)':'var(--run)'; }
+  if(stressSub) stressSub.textContent = st ? (st>60?'Høy stress':'st>35'?'Moderat':'Rolig') : '';
+
+  // VO2max + fitness age
+  const vo2El = document.getElementById('vo2-val');
+  const faEl = document.getElementById('fitness-age');
+  const vo2Sub = document.getElementById('vo2-sub');
+  const vo2 = data.maxMetrics?.vo2max;
+  if(vo2El) vo2El.textContent = vo2 ? Math.round(vo2*10)/10 : '—';
+  if(faEl) faEl.textContent = data.maxMetrics?.fitnessAge || '—';
+  if(vo2Sub && vo2){
+    const cat = vo2>=55?'Utmerket':vo2>=48?'Bra':vo2>=42?'Over snitt':'Under snitt';
+    vo2Sub.textContent = `ml/kg/min · ${cat}`;
+  }
+
+  // Race predictions
+  const rp = data.racePredictions || {};
+  const rpEl = document.getElementById('race-preds');
+  if(rpEl){
+    const fmt = (s) => { if(!s) return '—'; const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60; return h?`${h}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`:`${m}:${String(sc).padStart(2,'0')}`; };
+    rpEl.innerHTML = [
+      ['5 km', rp.run5k], ['10 km', rp.run10k], ['Halvmaraton', rp.halfMarathon], ['Maraton', rp.marathon]
+    ].map(([name,val])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--surface2)">
+      <span style="font-size:13px;color:var(--muted2)">${name}</span>
+      <span style="font-size:14px;font-weight:800">${fmt(val)}</span>
+    </div>`).join('');
+  }
+
+  // Recommendation
+  const rec = generateRec({...data, activities: GARMIN_ACTS});
+  const recCard = document.getElementById('kropp-rec-card');
+  const recTitle = document.getElementById('kropp-rec-title');
+  const recText = document.getElementById('kropp-rec-text');
+  const recBullets = document.getElementById('kropp-rec-bullets');
+  if(recCard){
+    const isGood = rec.title.includes('🔥') || rec.title.includes('💪');
+    recCard.style.background = isGood ? 'rgba(45,198,83,0.08)' : rec.title.includes('😴') ? 'rgba(230,57,70,0.08)' : 'rgba(247,127,0,0.08)';
+    recCard.style.border = `1px solid ${isGood ? 'rgba(45,198,83,0.2)' : rec.title.includes('😴') ? 'rgba(230,57,70,0.2)' : 'rgba(247,127,0,0.2)'}`;
+  }
+  if(recTitle) recTitle.textContent = rec.title;
+  if(recText) recText.textContent = rec.text;
+  if(recBullets) recBullets.innerHTML = rec.bullets.map(b=>`<div class="kropp-rec-bullet">${b}</div>`).join('');
+}
+
+async function syncBodyData(){
+  const btn = document.getElementById('kropp-sync-btn');
+  if(btn){ btn.textContent = '⟳ Henter...'; btn.classList.add('syncing'); }
+  try {
+    const resp = await fetch('/api/garmin?type=body', {signal: AbortSignal.timeout(15000)});
+    const text = await resp.text();
+    if(resp.ok && text.trim().startsWith('{')){
+      const data = JSON.parse(text);
+      BODY_DATA = data;
+      bodySyncTime = new Date().toISOString();
+      localStorage.setItem('garmin_body', JSON.stringify(BODY_DATA));
+      localStorage.setItem('garmin_body_time', bodySyncTime);
+      renderBodyData();
+      if(btn){ btn.textContent = '✓ Oppdatert'; setTimeout(()=>{ btn.textContent='⟳ Oppdater'; btn.classList.remove('syncing'); },2000); }
+      return;
+    }
+  } catch(e){}
+  if(btn){ btn.textContent = '⚠️ Feil'; setTimeout(()=>{ btn.textContent='⟳ Oppdater'; btn.classList.remove('syncing'); },2500); }
+}
+
 </body>
 </html>
