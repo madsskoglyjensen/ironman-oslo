@@ -847,7 +847,7 @@ function renderUke(){
 
   document.getElementById('adapt-banner').innerHTML=`
     <div class="adapt-banner" style="background:${bannerBg};border:1px solid ${bannerBorder}">
-      <div class="adapt-icon">${adapt.level<==-2?'😴':adapt.level===-1?'⚠️':adapt.level===1?'🔥':'💪'}</div>
+      <div class="adapt-icon">${adapt.level===-2?'😴':adapt.level===-1?'⚠️':adapt.level===1?'🔥':'💪'}</div>
       <div>
         <div class="adapt-title">${bannerTitle}</div>
         <div class="adapt-text">${bannerText}</div>
@@ -1225,4 +1225,5 @@ renderBodyData();
 </script>
 </body>
 </html>
+
 
