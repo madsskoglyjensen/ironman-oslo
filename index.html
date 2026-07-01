@@ -31,7 +31,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .countdown-hero{margin:0 20px 16px;background:linear-gradient(135deg,#1a1400 0%,#1c0d00 100%);border:1px solid rgba(255,106,0,0.25);border-radius:22px;padding:22px 20px;position:relative;overflow:hidden}
 .countdown-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:radial-gradient(circle,rgba(255,106,0,0.18) 0%,transparent 70%);pointer-events:none}
 .countdown-eyebrow{font-size:10px;font-weight:800;letter-spacing:3px;color:var(--accent);opacity:0.9;margin-bottom:8px}
-.countdown-num{font-size:72px;font-weight:900;line-height:1;letter-spacing:-3px;color:#fff}
+.countdown-num{font-size:min(72px,18vw);font-weight:900;line-height:1;letter-spacing:-3px;color:#fff}
 .countdown-label{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--muted2);margin-top:4px}
 .countdown-sub{font-size:12px;color:rgba(255,106,0,0.7);margin-top:8px;font-weight:600}
 .countdown-bar-wrap{margin-top:14px}
@@ -651,14 +651,20 @@ function hrvLabel(s){if(!s)return'—';const l=s.toLowerCase();if(l.includes('ba
 
 function calcKm(){
   let sv=0,bi=0,ru=0;
-  Object.keys(S.completed).forEach(k=>{const m=k.match(/w(\d+)d(\d+)/);if(!m)return;const d=PLAN[m[1]-1]?.[m[2]];if(!d)return;sv+=d.km[0];bi+=d.km[1];ru+=d.km[2];});
-  // Add Garmin activities from training period
+  const garminDates=new Set(GARMIN_ACTS.filter(a=>new Date(a.date)>=START_DATE).map(a=>a.date));
   GARMIN_ACTS.forEach(a=>{
     const d=new Date(a.date);
     if(d<START_DATE)return;
     if(a.type==='swim')sv+=a.km;
     else if(a.type==='bike')bi+=a.km;
     else if(a.type==='run')ru+=a.km;
+  });
+  Object.keys(S.completed).forEach(k=>{
+    const m=k.match(/w(\d+)d(\d+)/);if(!m)return;
+    const d=PLAN[m[1]-1]?.[m[2]];if(!d)return;
+    const val=S.completed[k];
+    if(val&&val.date&&garminDates.has(val.date.slice(0,10)))return;
+    sv+=d.km[0];bi+=d.km[1];ru+=d.km[2];
   });
   return{sv:Math.round(sv*10)/10,bi:Math.round(bi),ru:Math.round(ru)};
 }
@@ -671,7 +677,11 @@ function computeAdaptive(week){
   const planSessions=PLAN[week-1];
   const nonRest=planSessions.filter(s=>s.type!=='rest');
   let matched=0;
-  nonRest.forEach(s=>{if(garminThisWeek.some(a=>a.type===s.type||(s.type==='brick'&&(a.type==='run'||a.type==='bike'))))matched++;});
+  const usedGarmin=new Set();
+  nonRest.forEach((s,si)=>{
+    const idx=garminThisWeek.findIndex((a,ai)=>!usedGarmin.has(ai)&&(a.type===s.type||(s.type==='brick'&&(a.type==='run'||a.type==='bike'))));
+    if(idx>=0){matched++;usedGarmin.add(idx);}
+  });
   const compliance=nonRest.length>0?matched/nonRest.length:1;
   const bb=BODY_DATA?.bodyBattery?.current;
   const hrv=BODY_DATA?.hrv?.status;
@@ -783,7 +793,7 @@ function render(){
   const km=calcKm();
   const circ=163;
   [['swim',km.sv,SEASON_GOALS.swim],['bike',km.bi,SEASON_GOALS.bike],['run',km.ru,SEASON_GOALS.run]].forEach(([type,val,goal])=>{
-    const pct=Math.min(1,val/goal);
+    const pct=goal>0?Math.min(1,val/goal):0;
     const offset=circ-(pct*circ);
     const ring=document.getElementById('ring-'+type);
     if(ring)ring.style.strokeDashoffset=offset;
@@ -1074,7 +1084,7 @@ async function syncGarmin(){
         GARMIN_ACTS=data.activities;garminSyncTime=new Date().toISOString();
         localStorage.setItem('garmin_acts',JSON.stringify(GARMIN_ACTS));
         localStorage.setItem('garmin_sync_time',garminSyncTime);
-        renderGarmin();render();
+        renderGarmin();render();renderBodyData();
         btn.textContent='✓ Synket!';setTimeout(()=>{btn.textContent='⟳ Synk nå';btn.classList.remove('syncing');},2000);return;
       }
     }
@@ -1142,7 +1152,7 @@ function renderBodyData(){
   // Stress
   const st=data.stress?.avg;
   const stressEl=document.getElementById('stress-val');const stressSub=document.getElementById('stress-sub');
-  if(stressEl){stressEl.textContent=st||'—';stressEl.style.color=st>60?'var(--race)':st>35?'var(--bike)':'var(--run)';}
+  if(stressEl){stressEl.textContent=st||'—';stressEl.style.color=st?(st>60?'var(--race)':st>35?'var(--bike)':'var(--run)'):'var(--muted2)';}
   if(stressSub)stressSub.textContent=st?(st>60?'Høy stress':st>35?'Moderat':'Rolig'):'';
   // VO2max
   const vo2=data.maxMetrics?.vo2max;
