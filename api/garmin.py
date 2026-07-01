@@ -38,7 +38,9 @@ def get_mfa_callback():
 
 def make_api():
     """Create and login Garmin API using token store (preferred) or email/password."""
-    email = os.environ.get('Garmin_EMAIL') or os.environ.get('GARMIN_EMAIL', '')
+    import tempfile as _tempfile, json as _json, base64 as _b64
+
+    email    = os.environ.get('Garmin_EMAIL') or os.environ.get('GARMIN_EMAIL', '')
     password = os.environ.get('Garmin_Password') or os.environ.get('GARMIN_PASSWORD', '')
     tokens_b64 = os.environ.get('GARMIN_TOKENS_B64')
 
@@ -46,12 +48,31 @@ def make_api():
     api = Garmin(email=email, password=password, is_cn=False, prompt_mfa=mfa_cb)
 
     if tokens_b64:
-        # Token-based login — no MFA prompt needed
-        api.login(tokenstore_base64=tokens_b64)
-    else:
-        # Email/password — will raise if MFA required and no TOTP secret set
-        api.login()
+        # Method A: tokenstore_base64 kwarg (garminconnect 0.2.x)
+        try:
+            api.login(tokenstore_base64=tokens_b64)
+            return api
+        except TypeError:
+            pass  # 0.3.x doesn't have this param — fall through
 
+        # Method B: write token files to tmpdir, pass tokenstore path (garminconnect 0.3.x)
+        try:
+            raw = _json.loads(_b64.b64decode(tokens_b64))
+            tmpdir = _tempfile.mkdtemp()
+            for k, v in raw.items():
+                fname = k if k.endswith('.json') else k + '.json'
+                with open(os.path.join(tmpdir, fname), 'w') as fh:
+                    _json.dump(v, fh)
+            api.login(tokenstore=tmpdir)
+            return api
+        except Exception as e:
+            raise Exception(
+                f"Token load failed ({e}). "
+                "Please regenerate GARMIN_TOKENS_B64 by running generate_tokens.py locally."
+            )
+
+    # No tokens — try direct login (will fail if MFA is enabled)
+    api.login()
     return api
 
 
@@ -213,8 +234,7 @@ class handler(BaseHTTPRequestHandler):
 
         tokens_b64 = os.environ.get('GARMIN_TOKENS_B64')
         hint = ('Add GARMIN_TOKENS_B64 to Vercel env vars. '
-                'Run generate_tokens.py locally to create it. '
-                'Or set GARMIN_TOTP_SECRET if you have your authenticator secret.')
+                'Run generate_tokens.py locally to create it.')
         if not tokens_b64:
             return self._respond(401, {
                 'error': 'MFA auth required — no token store configured',
