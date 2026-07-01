@@ -2,7 +2,7 @@
 <html lang="no">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="IRONMAN">
@@ -10,7 +10,7 @@
 <title>IRONMAN OSLO</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-button,[onclick]{touch-action:manipulation;cursor:pointer}
+button,[onclick],.tappable{touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 :root{
   --bg:#080808;--surface:#131313;--surface2:#1c1c1c;--surface3:#242424;--border:#2a2a2a;
   --text:#f0f0f0;--muted:#555;--muted2:#888;
@@ -53,7 +53,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 /* BODY STATUS STRIP */
 .body-strip{display:flex;gap:8px;margin:0 20px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .body-strip::-webkit-scrollbar{display:none}
-.body-chip{background:var(--surface);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;min-width:fit-content;cursor:pointer}
+.body-chip{background:var(--surface);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;min-width:fit-content;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .body-chip-icon{font-size:16px}
 .body-chip-val{font-size:16px;font-weight:900}
 .body-chip-label{font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted2)}
@@ -73,7 +73,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 /* WEEK DOTS */
 .week-dots{display:flex;gap:4px;margin:0 20px 16px;flex-wrap:wrap}
-.week-dot{width:22px;height:22px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:var(--muted);cursor:pointer;transition:all .2s}
+.week-dot{width:44px;height:44px;border-radius:50%;background:var(--surface2);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:var(--muted);cursor:pointer;transition:all .2s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .week-dot.current{border-color:var(--accent);color:var(--accent);background:rgba(255,106,0,0.12)}
 .week-dot.done{background:var(--accent);border-color:var(--accent);color:#fff}
 
@@ -87,7 +87,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 /* DAY CARDS (UKE page) */
 .section-title{font-size:10px;font-weight:800;letter-spacing:2px;color:var(--muted2);margin:0 20px 10px;text-transform:uppercase}
 .days-list{display:flex;flex-direction:column;gap:8px;margin:0 20px 20px}
-.day-card{background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .15s;position:relative;overflow:hidden}
+.day-card{background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .15s;position:relative;overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;min-height:60px}
 .day-card:active{background:var(--surface2)}
 .day-card.done{opacity:.55}
 .day-card.adapted{border:1px solid rgba(255,106,0,0.3)}
@@ -125,7 +125,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .garmin-stat-val{font-size:26px;font-weight:900}
 .garmin-stat-label{font-size:9px;font-weight:700;letter-spacing:1px;color:var(--muted2);margin-top:4px}
 .garmin-stat-sub{font-size:11px;color:var(--muted2);margin-top:3px}
-.garmin-activity{margin:0 20px 8px;background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.garmin-activity{margin:0 20px 8px;background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .garmin-activity:active{background:var(--surface2)}
 .garmin-act-icon{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .garmin-act-info{flex:1;min-width:0}
@@ -181,9 +181,9 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .wsi-sub{font-size:12px;color:var(--muted2);margin-top:3px}
 
 /* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;align-items:flex-end}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:100;align-items:flex-end;cursor:pointer;touch-action:manipulation}
 .modal-overlay.open{display:flex}
-.modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 22px 48px;width:100%;max-height:82vh;overflow-y:auto}
+.modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 22px 48px;width:100%;max-height:82vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .modal-handle{width:40px;height:4px;background:var(--border);border-radius:99px;margin:-10px auto 22px}
 .modal-title{font-size:22px;font-weight:900;margin-bottom:4px}
 .modal-sub{font-size:13px;color:var(--muted2);margin-bottom:18px}
@@ -192,18 +192,18 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .workout-block p{font-size:14px;color:var(--text);line-height:1.65}
 .stars-label{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--muted2);margin-bottom:8px}
 .stars{display:flex;gap:10px;margin-bottom:18px}
-.star{font-size:30px;cursor:pointer;opacity:.25;transition:all .15s}
+.star{font-size:30px;cursor:pointer;opacity:.25;transition:all .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 .star.active{opacity:1}
 .modal-btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:900;cursor:pointer;margin-top:8px}
 .modal-btn.primary{background:var(--accent);color:#fff}
 .modal-btn.secondary{background:var(--surface2);color:var(--text)}
 .modal-btn:active{opacity:.8}
-.garmin-detail-modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 22px 48px;width:100%;max-height:85vh;overflow-y:auto}
+.garmin-detail-modal{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 22px 48px;width:100%;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .garmin-match{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.3);border-radius:12px;padding:10px 14px;margin:12px 0;font-size:12px;color:var(--run);font-weight:700}
 .garmin-nomatch{background:rgba(255,106,0,.08);border:1px solid rgba(255,106,0,.2);border-radius:12px;padding:10px 14px;margin:12px 0;font-size:12px;color:var(--bike);font-weight:600}
 
 /* READINESS CARD (home) */
-.readiness-card{margin:0 20px 16px;border-radius:18px;overflow:hidden;background:var(--surface);cursor:pointer}
+.readiness-card{margin:0 20px 16px;border-radius:18px;overflow:hidden;background:var(--surface);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 .readiness-top{padding:16px 18px 12px;display:flex;align-items:center;gap:16px}
 .readiness-ring-wrap{position:relative;width:70px;height:70px;flex-shrink:0}
 .readiness-ring-wrap svg{transform:rotate(-90deg)}
@@ -219,12 +219,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 /* FORM */
 .form-row{display:flex;gap:8px;margin:0 20px 16px}
-.form-btn{flex:1;padding:10px 6px;border-radius:12px;border:2px solid var(--border);background:var(--surface);color:var(--muted2);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center}
+.form-btn{flex:1;padding:10px 6px;border-radius:12px;border:2px solid var(--border);background:var(--surface);color:var(--muted2);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;min-height:44px;display:flex;align-items:center;justify-content:center}
 .form-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(255,106,0,.1)}
 
 /* NAV */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(8,8,8,.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;padding:10px 0 max(22px,env(safe-area-inset-bottom));z-index:50}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:8px 4px;color:var(--muted2);transition:color .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:8px 4px;color:var(--muted2);transition:color .15s;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;-webkit-user-select:none;min-height:44px}
 .nav-item.active{color:var(--accent)}
 .nav-icon{font-size:22px}
 .nav-label{font-size:9px;font-weight:800;letter-spacing:1px}
@@ -240,7 +240,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   <div class="header">
     <div class="header-row">
       <div><div class="app-eyebrow">UOFFISIELL</div><div class="app-title">IRONMAN OSLO</div></div>
-      <div style="text-align:right;cursor:pointer" onclick="showPage('uke')">
+      <div style="text-align:right;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none" onclick="showPage('uke')">
         <div style="background:var(--accent);color:#fff;font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px;letter-spacing:1px" id="week-badge">UKE 1</div>
         <div style="font-size:10px;color:var(--muted2);margin-top:4px;font-weight:600">trykk for ukeplan →</div>
       </div>
@@ -260,11 +260,11 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 
   <!-- BODY STATUS -->
-  <div class="body-strip" id="body-strip" onclick="showPage('kropp')">
-    <div class="body-chip"><div class="body-chip-icon">🔋</div><div><div class="body-chip-val" id="strip-bb" style="color:var(--run)">—</div><div class="body-chip-label">BODY BAT</div></div></div>
-    <div class="body-chip"><div class="body-chip-icon">💜</div><div><div class="body-chip-val" id="strip-hrv">—</div><div class="body-chip-label">HRV</div></div></div>
-    <div class="body-chip"><div class="body-chip-icon">❤️</div><div><div class="body-chip-val" id="strip-rhr" style="color:var(--race)">—</div><div class="body-chip-label">RHR BPM</div></div></div>
-    <div class="body-chip"><div class="body-chip-icon">😴</div><div><div class="body-chip-val" id="strip-sleep">—</div><div class="body-chip-label">SØVN</div></div></div>
+  <div class="body-strip" id="body-strip">
+    <div class="body-chip" onclick="showPage('kropp')"><div class="body-chip-icon">🔋</div><div><div class="body-chip-val" id="strip-bb" style="color:var(--run)">—</div><div class="body-chip-label">BODY BAT</div></div></div>
+    <div class="body-chip" onclick="showPage('kropp')"><div class="body-chip-icon">💜</div><div><div class="body-chip-val" id="strip-hrv">—</div><div class="body-chip-label">HRV</div></div></div>
+    <div class="body-chip" onclick="showPage('kropp')"><div class="body-chip-icon">❤️</div><div><div class="body-chip-val" id="strip-rhr" style="color:var(--race)">—</div><div class="body-chip-label">RHR BPM</div></div></div>
+    <div class="body-chip" onclick="showPage('kropp')"><div class="body-chip-icon">😴</div><div><div class="body-chip-val" id="strip-sleep">—</div><div class="body-chip-label">SØVN</div></div></div>
   </div>
 
   <!-- TODAY'S WORKOUT -->
@@ -444,7 +444,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 <!-- GARMIN DETAIL MODAL -->
 <div class="modal-overlay" id="garmin-modal" onclick="closeGarminModal(event)">
-  <div class="garmin-detail-modal" onclick="event.stopPropagation()">
+  <div class="garmin-detail-modal" onclick="event.stopPropagation()" style="cursor:default;touch-action:auto">
     <div class="modal-handle"></div>
     <div id="garmin-modal-content"></div>
     <button class="modal-btn secondary" onclick="document.getElementById('garmin-modal').classList.remove('open')" style="margin-top:12px">Lukk</button>
@@ -462,7 +462,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal" onclick="closeModalBg(event)">
-  <div class="modal">
+  <div class="modal" style="cursor:default;touch-action:auto">
     <div class="modal-handle"></div>
     <div class="modal-title" id="m-title"></div>
     <div class="modal-sub" id="m-sub"></div>
@@ -730,7 +730,7 @@ function render(){
   dots.innerHTML='';
   for(let i=1;i<=12;i++){
     const el=document.createElement('div');
-    el.className='week-dot'+(i===w?' current':i<w?' done':'');
+    el.className='week-dot tappable'+(i===w?' current':i<w?' done':'');
     el.textContent=i;
     const wi=i;el.onclick=()=>{S.week=wi;save();render();renderUke();};
     dots.appendChild(el);
@@ -864,7 +864,7 @@ function renderUke(){
         <div class="day-detail">${day.detail}${stars?' · '+stars:''}</div>
       </div>
       <span class="day-tag ${day.type}">${day.dur}</span>`;
-    if(!isDone&&rawDay.type!=='rest')el.onclick=()=>openWorkout(w,i);
+    if(!isDone&&rawDay.type!=='rest'){el.onclick=()=>openWorkout(w,i);el.classList.add('tappable');}
     dl.appendChild(el);
   });
 
@@ -1023,7 +1023,7 @@ function renderGarmin(){
     const matchBadge=match?`<div class="garmin-act-badge" style="background:rgba(0,230,118,.15);color:var(--run)">✓ U${match.week}</div>`:'';
     el.innerHTML=`<div class="garmin-act-icon" style="background:${garminBg(act.type)}">${garminEmoji(act.type)}</div>
       <div class="garmin-act-info"><div class="garmin-act-name">${act.name}</div><div class="garmin-act-meta">${dt}</div><div class="garmin-act-stats">${statsHtml}</div></div>${matchBadge}`;
-    el.onclick=()=>openGarminDetail(idx);
+    el.classList.add('tappable');el.onclick=()=>openGarminDetail(idx);
     gl.appendChild(el);
   });
   if(garminSyncTime)document.getElementById('garmin-sync-time').textContent='Sist synket: '+new Date(garminSyncTime).toLocaleString('no',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -1215,3 +1215,4 @@ renderBodyData();
 </script>
 </body>
 </html>
+
