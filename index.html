@@ -865,6 +865,8 @@ function renderUke(){
     const el=document.createElement('div');
     el.className='day-card'+(isDone?' done':'')+(day.adapted?' adapted':'');
     const stars=S.completed[key]?.star?'★'.repeat(S.completed[key].star):'';
+    const tgt=getSessionTargets(day);
+    const zoneBadge=tgt&&day.type!=='rest'?`<div class="zone-pill" style="background:rgba(${tgt.rgb},0.12);color:rgba(${tgt.rgb},1)">S${tgt.zone} ${tgt.bpm.lo}–${tgt.bpm.hi}bpm${tgt.pace?' · '+tgt.pace+'/km':''}</div>`:'';
     el.innerHTML=`
       ${isDone?'<div class="done-check">✓</div>':''}
       ${day.adapted&&!isDone?'<div class="adapt-dot"></div>':''}
@@ -872,6 +874,7 @@ function renderUke(){
       <div class="day-info">
         <div class="day-name">${days[i]} · ${day.name}</div>
         <div class="day-detail">${day.detail}${stars?' · '+stars:''}</div>
+        ${isDone?'':zoneBadge}
       </div>
       <span class="day-tag ${day.type}">${day.dur}</span>`;
     if(!isDone&&rawDay.type!=='rest'){el.onclick=()=>openWorkout(w,i);el.classList.add('tappable');}
@@ -954,11 +957,30 @@ function openWorkout(week,i){
   document.getElementById('m-sub').textContent=d.detail+(d.dur!=='—'?' · '+d.dur:'');
   let bodyHtml=d.desc?`<div class="workout-block"><h4>OM ØKTEN</h4><p>${d.desc}</p></div>`:'';
   if(d.adapted)bodyHtml=`<div class="workout-block" style="border:1px solid rgba(255,106,0,0.3)"><h4>⚡ JUSTERT AV ADAPTIV PLAN</h4><p>Originalt: ${raw.detail}. Justert basert på kropp-signaler.</p></div>`+bodyHtml;
-  // Add tech tips
+  // Personal targets block
+  const tgt=getSessionTargets(d);
+  if(tgt){
+    const paceRow=tgt.pace?`<div class="target-item"><div class="target-label">TEMPO</div><div class="target-val">${tgt.pace}<span style="font-size:13px;font-weight:600;color:var(--muted2)">/km</span></div><div class="target-sub">${tgt.paceDesc}</div></div>`:'';
+    const extraRow=tgt.extra?`<div class="target-item"><div class="target-label">${tgt.extraLabel}</div><div class="target-val">${tgt.extra}</div></div>`:'';
+    bodyHtml+=`<div class="workout-block" style="background:rgba(${tgt.rgb},0.05);border:1px solid rgba(${tgt.rgb},0.2)">
+      <h4 style="color:rgba(${tgt.rgb},1);margin-bottom:4px">📊 DINE PERSONLIGE MÅL</h4>
+      <div style="font-size:11px;color:var(--muted2);margin-bottom:10px">${tgt.zoneName}</div>
+      <div class="targets-grid">
+        <div class="target-item">
+          <div class="target-label">PULSSONE</div>
+          <div class="target-val" style="color:rgba(${tgt.rgb},1)">${tgt.zone}</div>
+          <div class="target-sub">${tgt.bpm.lo}–${tgt.bpm.hi} bpm</div>
+        </div>
+        ${paceRow}${extraRow}
+      </div>
+      <div class="target-desc">${tgt.zoneDesc}</div>
+    </div>`;
+  }
+  // Tech tips
   const tips=[];
-  if(d.type==='run'){tips.push('Kadensmål: 174–180 spm (tell skritt i 15 sek × 4)');}
-  if(d.type==='swim'){tips.push('SWOLF under 35 = god effektivitet. Tell slag per bassengbane.');}
-  if(d.type==='bike'){tips.push('Kadenymål: 85–95 RPM. Spis hvert 20–30 min.');}
+  if(d.type==='run'){tips.push('Kadensmål: 174–180 spm');}
+  if(d.type==='swim'){tips.push('SWOLF under 35 = god effektivitet.');}
+  if(d.type==='bike'){tips.push('Spis og drikk hvert 20–30 min på sykkel.');}
   if(tips.length)bodyHtml+=`<div class="workout-block"><h4>🎯 TEKNIKKFOKUS</h4><p>${tips.join('<br>')}</p></div>`;
   document.getElementById('m-body').innerHTML=bodyHtml;
   document.getElementById('m-rating-section').style.display=d.type==='rest'?'none':'block';
