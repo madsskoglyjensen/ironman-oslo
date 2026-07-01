@@ -57,7 +57,9 @@ def make_api():
 
         # Method B: write token files to tmpdir, pass tokenstore path (garminconnect 0.3.x)
         try:
-            raw = _json.loads(_b64.b64decode(tokens_b64))
+            # Add padding if missing (common when copied from terminal)
+            padded = tokens_b64 + "=" * (4 - len(tokens_b64) % 4)
+            raw = _json.loads(_b64.b64decode(padded))
             tmpdir = _tempfile.mkdtemp()
             for k, v in raw.items():
                 fname = k if k.endswith('.json') else k + '.json'
