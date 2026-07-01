@@ -112,7 +112,7 @@ def get_activities(api):
             'hrMax': int(a.get('maxHR', 0) or 0) or None,
             'elev': int(a.get('elevationGain', 0) or 0) or None,
             'kcal': int(a.get('calories', 0) or 0) or None,
-            'cadence': int(cadence * 2) if cadence else None,
+            'cadence': int(cadence) if cadence else None,
             'vertOsc': round(float(a.get('avgVerticalOscillation') or 0), 1) or None,
             'gct': int(a.get('avgGroundContactTime') or 0) or None,
             'vertRatio': round(float(a.get('avgVerticalRatio') or 0), 1) or None,
@@ -147,9 +147,11 @@ def get_body_data(api):
         result['sleep'] = {'error': str(e)}
 
     try:
-        bb_list = api.get_body_battery([today])
+        bb_list = api.get_body_battery(today)
         if bb_list:
-            vals = bb_list[0].get('bodyBatteryValuesArray', [])
+            # get_body_battery may return a list or single dict
+            first = bb_list[0] if isinstance(bb_list, list) else bb_list
+            vals = first.get('bodyBatteryValuesArray', [])
             valid = [v[1] for v in vals if v[1] is not None]
             result['bodyBattery'] = {
                 'current': valid[-1] if valid else None,
