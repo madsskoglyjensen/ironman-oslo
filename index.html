@@ -231,6 +231,79 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 /* EMPTY */
 .empty{text-align:center;padding:60px 20px;color:var(--muted2);font-size:14px;line-height:1.8}
+
+/* PERSONAL TARGETS (zones + paces) */
+.zone-pill{display:inline-block;margin-top:6px;font-size:10px;font-weight:800;letter-spacing:.3px;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.targets-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:10px;margin-top:4px}
+.target-item{background:rgba(255,255,255,0.03);border-radius:10px;padding:10px 8px;text-align:center}
+.target-label{font-size:9px;font-weight:800;letter-spacing:1px;color:var(--muted2)}
+.target-val{font-size:20px;font-weight:900;line-height:1.1;margin-top:3px}
+.target-sub{font-size:11px;color:var(--muted2);margin-top:2px;font-weight:600}
+.target-desc{font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.5}
+
+/* PROFILE CARD */
+.profile-card{margin:0 20px 14px;background:var(--surface);border-radius:16px;padding:16px 18px}
+.profile-title{font-size:14px;font-weight:900;margin-bottom:4px}
+.profile-sub{font-size:12px;color:var(--muted2);line-height:1.5;margin-bottom:12px}
+.profile-bars{display:flex;flex-direction:column;gap:10px}
+.profile-bar-row{display:flex;align-items:center;gap:10px}
+.profile-bar-label{font-size:11px;font-weight:700;width:70px;flex-shrink:0}
+.profile-bar-track{flex:1;height:8px;background:var(--surface2);border-radius:99px;overflow:hidden}
+.profile-bar-fill{height:100%;border-radius:99px}
+.profile-bar-tag{font-size:10px;font-weight:800;width:64px;text-align:right;flex-shrink:0}
+
+/* FORM CURVE (CTL/ATL/TSB) */
+.form-curve-card{margin:0 20px 16px;background:var(--surface);border-radius:16px;padding:16px}
+.form-curve-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.form-tsb-val{font-size:26px;font-weight:900;line-height:1}
+.form-tsb-label{font-size:9px;font-weight:800;letter-spacing:1px;color:var(--muted2);margin-top:2px}
+.form-legend{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+.form-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted2);font-weight:600}
+.form-legend-dot{width:8px;height:8px;border-radius:2px}
+.form-metric{display:flex;flex-direction:column;align-items:flex-end}
+.form-metric-val{font-size:15px;font-weight:800}
+.form-metric-label{font-size:9px;color:var(--muted2);font-weight:700;letter-spacing:.5px}
+
+/* FUELING */
+.fuel-block{background:rgba(255,214,10,0.06);border:1px solid rgba(255,214,10,0.25);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.fuel-block h4{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--gold);margin-bottom:10px}
+.fuel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fuel-item{text-align:center}
+.fuel-val{font-size:20px;font-weight:900}
+.fuel-lbl{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--muted2);margin-top:3px}
+.fuel-note{font-size:11px;color:var(--muted2);margin-top:10px;line-height:1.5}
+
+/* ANALYSIS HUB */
+.an-card{margin:0 20px 12px;background:var(--surface);border-radius:16px;padding:16px 18px}
+.an-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.an-bar-row:last-child{margin-bottom:0}
+.an-bar-label{font-size:11px;font-weight:700;width:66px;flex-shrink:0}
+.an-bar-track{flex:1;height:14px;background:var(--surface2);border-radius:99px;overflow:hidden;position:relative}
+.an-bar-fill{height:100%;border-radius:99px}
+.an-bar-target{position:absolute;top:-2px;bottom:-2px;width:2px;background:rgba(255,255,255,0.55)}
+.an-bar-val{font-size:11px;font-weight:800;width:96px;text-align:right;flex-shrink:0;color:var(--muted2)}
+.intensity-bar{display:flex;height:22px;border-radius:8px;overflow:hidden;margin:4px 0 8px}
+.intensity-seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#0a0a0a}
+.pb-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pb-card{background:var(--surface2);border-radius:12px;padding:12px 14px}
+.pb-val{font-size:22px;font-weight:900;line-height:1}
+.pb-lbl{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--muted2);margin-top:4px}
+.pb-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.insight{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--surface2)}
+.insight:last-child{border-bottom:none}
+.insight-ic{font-size:16px;flex-shrink:0;margin-top:1px}
+.insight-tx{font-size:12.5px;line-height:1.5}
+.log-week{margin:0 20px 10px;background:var(--surface);border-radius:14px;padding:12px 14px}
+.log-week-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.log-week-title{font-size:13px;font-weight:800}
+.log-week-tag{font-size:10px;font-weight:800;padding:3px 9px;border-radius:20px}
+.log-days{display:flex;gap:6px}
+.log-day{flex:1;aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:15px;position:relative;background:var(--surface2)}
+.log-day-dow{font-size:7px;font-weight:800;letter-spacing:.5px;color:var(--muted2)}
+.log-day-mark{position:absolute;top:2px;right:3px;font-size:8px;font-weight:900}
+.log-legend{display:flex;gap:14px;margin:0 20px 16px;flex-wrap:wrap}
+.log-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted2);font-weight:600}
+.log-legend-dot{width:10px;height:10px;border-radius:3px}
 </style>
 </head>
 <body>
@@ -358,6 +431,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <div class="app-title" id="uke-header-title">Uke 1</div>
   </div>
   <div id="adapt-banner"></div>
+  <div id="profile-card"></div>
   <div class="section-title">DENNE UKEN</div>
   <div class="days-list" id="days-list"></div>
   <div class="section-title">UTFORDRINGER</div>
@@ -408,6 +482,10 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <div class="sleep-bar" id="sleep-bar"></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px" id="sleep-legend"></div>
   </div>
+  <div class="section-title">FORM (TRENINGSBELASTNING)</div>
+  <div class="form-curve-card" id="form-curve">
+    <div class="empty" style="padding:20px">Henter treningsbelastning...</div>
+  </div>
   <div class="section-title">FORM & PROGRESJON</div>
   <div class="kropp-grid">
     <div class="kropp-card"><div class="kropp-card-label">VO2MAX</div><div class="kropp-card-val" style="color:var(--swim)" id="vo2-val">—</div><div class="kropp-card-sub" id="vo2-sub">ml/kg/min</div></div>
@@ -425,9 +503,9 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   </div>
 </div>
 
-<!-- MER -->
+<!-- MER / ANALYSE -->
 <div id="page-mer" class="page">
-  <div class="header"><div class="app-eyebrow">OVERSIKT</div><div class="app-title">Statistikk</div></div>
+  <div class="header"><div class="app-eyebrow">ANALYSE & OVERSIKT</div><div class="app-title">Analyse</div></div>
   <div class="tracker-grid">
     <div class="tracker-card"><div class="tracker-big" style="color:var(--swim)" id="t-swim-km">0</div><div class="tracker-label">KM SVØMT</div><div class="tracker-sub" id="t-swim-n">0 svømminger</div></div>
     <div class="tracker-card"><div class="tracker-big" style="color:var(--bike)" id="t-bike-km">0</div><div class="tracker-label">KM SYKLET</div><div class="tracker-sub" id="t-bike-n">0 turer</div></div>
@@ -436,7 +514,29 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <div class="tracker-card"><div class="tracker-big" id="t-total">0</div><div class="tracker-label">TOTALT</div><div class="tracker-sub">alle økter</div></div>
     <div class="tracker-card"><div class="tracker-big" id="t-avg">—</div><div class="tracker-label">SNITT ★</div><div class="tracker-sub">rating</div></div>
   </div>
-  <div class="section-title" style="margin-top:8px">UKEOVERSIKT</div>
+
+  <div class="section-title" style="margin-top:8px">VOLUM · PLAN VS FAKTISK</div>
+  <div class="an-card" id="an-volume"></div>
+
+  <div class="section-title">KVALITET · INTENSITET</div>
+  <div class="an-card" id="an-quality"></div>
+
+  <div class="section-title">PERSONLIGE REKORDER</div>
+  <div class="an-card" id="an-pbs"></div>
+
+  <div class="section-title">INNSIKT</div>
+  <div class="an-card" id="an-insights"></div>
+
+  <div class="section-title">FULL ØKTLOGG · GJORT / IKKE GJORT</div>
+  <div class="log-legend">
+    <div class="log-legend-item"><div class="log-legend-dot" style="background:var(--run)"></div>Fullført</div>
+    <div class="log-legend-item"><div class="log-legend-dot" style="background:var(--swim)"></div>Garmin-match</div>
+    <div class="log-legend-item"><div class="log-legend-dot" style="background:var(--race)"></div>Hoppet over</div>
+    <div class="log-legend-item"><div class="log-legend-dot" style="background:var(--surface3)"></div>Kommende</div>
+  </div>
+  <div id="an-log"></div>
+
+  <div class="section-title" style="margin-top:16px">UKEOVERSIKT</div>
   <div id="week-summary"></div>
   <div class="section-title" style="margin-top:16px">HISTORIKK</div>
   <div id="history-list"><div class="empty">Ingen økter logget ennå.</div></div>
@@ -457,7 +557,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   <div class="nav-item" onclick="showPage('uke')" id="nav-uke"><div class="nav-icon">📅</div><div class="nav-label">UKE</div></div>
   <div class="nav-item" onclick="showPage('garmin')" id="nav-garmin"><div class="nav-icon">⌚</div><div class="nav-label">GARMIN</div></div>
   <div class="nav-item" onclick="showPage('kropp')" id="nav-kropp"><div class="nav-icon">❤️</div><div class="nav-label">KROPP</div></div>
-  <div class="nav-item" onclick="showPage('mer')" id="nav-mer"><div class="nav-icon">📊</div><div class="nav-label">MER</div></div>
+  <div class="nav-item" onclick="showPage('mer')" id="nav-mer"><div class="nav-icon">📊</div><div class="nav-label">ANALYSE</div></div>
 </div>
 
 <!-- MODAL -->
@@ -669,6 +769,202 @@ function calcKm(){
   return{sv:Math.round(sv*10)/10,bi:Math.round(bi),ru:Math.round(ru)};
 }
 
+// ── ATHLETE PROFILE (derived from Garmin) ──────────────────────────────────────
+function timeToMin(t){
+  if(!t)return 0;
+  const p=String(t).split(':').map(Number);
+  if(p.length===3)return p[0]*60+p[1]+p[2]/60;
+  if(p.length===2)return p[0]+p[1]/60;
+  return 0;
+}
+function fmtPaceSec(sec){sec=Math.round(sec);return`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}
+function paceRangeStr(r){return`${fmtPaceSec(r[0])}–${fmtPaceSec(r[1])}`;}
+
+// Cached athlete model. Recomputed when Garmin data changes.
+let _athlete=null,_athleteKey=null;
+function computeAthlete(){
+  const key=(GARMIN_ACTS?.length||0)+'|'+(BODY_DATA?JSON.stringify(BODY_DATA.rhr)+JSON.stringify(BODY_DATA.racePredictions):'0');
+  if(_athlete&&_athleteKey===key)return _athlete;
+  // Max HR: best measured hrMax, else best avg HR + buffer, else age-agnostic default
+  let maxObs=0,avgObs=0;
+  GARMIN_ACTS.forEach(a=>{if(a.hrMax&&a.hrMax>maxObs)maxObs=a.hrMax;if(a.hr&&a.hr>avgObs)avgObs=a.hr;});
+  let maxHR=maxObs||(avgObs?avgObs+12:190);
+  maxHR=Math.max(170,Math.min(205,maxHR));
+  const restHR=Math.max(35,Math.min(70,(BODY_DATA&&BODY_DATA.rhr&&BODY_DATA.rhr.value)||48));
+  const hrr=maxHR-restHR;
+  // Threshold pace (sec/km): prefer Garmin 10k prediction, else best recent run pace
+  let thr=null;
+  const pred=BODY_DATA&&BODY_DATA.racePredictions;
+  if(pred&&pred.run10k)thr=pred.run10k/10;
+  if(!thr){
+    const paces=GARMIN_ACTS.filter(a=>a.type==='run'&&a.pace&&a.km>=3).map(a=>paceToSec(a.pace)).filter(Boolean);
+    if(paces.length)thr=Math.min(...paces)+8;
+  }
+  if(!thr)thr=300;
+  const zones=[
+    {z:1,name:'Sone 1 · Restitusjon',desc:'Veldig lett — full snakketempo',lo:0.50,hi:0.60},
+    {z:2,name:'Sone 2 · Aerob base',desc:'Rolig — kan snakke i hele setninger',lo:0.60,hi:0.70},
+    {z:3,name:'Sone 3 · Tempo',desc:'Komfortabelt hardt — korte setninger',lo:0.70,hi:0.80},
+    {z:4,name:'Sone 4 · Terskel',desc:'Hardt — terskelfart, få ord',lo:0.80,hi:0.90},
+    {z:5,name:'Sone 5 · VO2max',desc:'Maksimalt — ingen prat',lo:0.90,hi:1.00},
+  ];
+  const paces={
+    easy:[thr+45,thr+75],
+    long:[thr+40,thr+62],
+    imRace:[thr+50,thr+66],
+    tempo:[thr+15,thr+30],
+    threshold:[thr-5,thr+8],
+    interval:[thr-25,thr-8],
+  };
+  _athlete={maxHR,restHR,hrr,thr,zones,paces,source:maxObs?'målt maxpuls':'estimert'};
+  _athleteKey=key;
+  return _athlete;
+}
+function hrZone(A,i){return{lo:Math.round(A.restHR+A.zones[i].lo*A.hrr),hi:Math.round(A.restHR+A.zones[i].hi*A.hrr)};}
+
+// Per-session personalized targets (THE function that was missing → caused the crash)
+function getSessionTargets(s){
+  if(!s||s.type==='rest')return null;
+  const A=computeAthlete();
+  const det=((s.detail||'')+' '+(s.name||'')).toLowerCase();
+  let zi=1,pace=null,paceDesc='',extra=null,extraLabel='';
+  if(s.type==='run'){
+    if(det.includes('intervall')){zi=4;pace=paceRangeStr(A.paces.interval);paceDesc='Hardt intervalltempo (sone 5)';}
+    else if(det.includes('tempo')){zi=3;pace=paceRangeStr(A.paces.threshold);paceDesc='Terskel/tempo (sone 4)';}
+    else if(det.includes('lang')){zi=1;pace=paceRangeStr(A.paces.long);paceDesc='Rolig langtur — nær IM-fart';}
+    else{zi=1;pace=paceRangeStr(A.paces.easy);paceDesc='Rolig aerob base';}
+    extra='174–180';extraLabel='KADENS spm';
+  }else if(s.type==='bike'){
+    if(det.includes('hard')||det.includes('drag')||det.includes('×')||det.includes('intervall')){zi=3;}
+    else{zi=1;}
+    extra='85–95';extraLabel='KADENS RPM';
+  }else if(s.type==='swim'){
+    if(det.includes('intervall')||det.includes('drag')){zi=2;}else{zi=1;}
+    extra='< 35';extraLabel='SWOLF-MÅL';
+  }else if(s.type==='brick'){
+    zi=2;pace=paceRangeStr(A.paces.imRace);paceDesc='Løp på IM-racefart etter sykkel';extra='Racefart';extraLabel='LØPEFOKUS';
+  }else if(s.type==='race'){
+    zi=1;pace=paceRangeStr(A.paces.imRace);paceDesc='Hold IM-fart — ikke gå ut for hardt';extra='60–90 g/t';extraLabel='KARBO';
+  }
+  const z=A.zones[zi];const bpm=hrZone(A,zi);
+  return{zone:z.z,zoneName:z.name,zoneDesc:z.desc,bpm,rgb:typeRGB(s.type),pace,paceDesc,extra,extraLabel};
+}
+
+// ── FUELING ────────────────────────────────────────────────────────────────────
+function parseDurMin(dur){
+  if(!dur||dur==='—')return 0;
+  const d=String(dur).replace(',','.');
+  if(/t/.test(d)){const n=d.match(/[\d.]+/g)||[];return parseFloat(n[n.length-1]||0)*60;}
+  if(/min/.test(d)){const n=d.match(/\d+/g)||[];return parseInt(n[n.length-1]||0);}
+  return 0;
+}
+function getFueling(s){
+  if(!s)return null;
+  const min=parseDurMin(s.dur);
+  if(s.type!=='race'&&s.type!=='brick'&&min<75)return null;
+  const hours=Math.max(1,(s.type==='race'?720:min)/60);
+  const carbsPerH=s.type==='race'?85:(min>=180?75:60);
+  const fluidPerH=650;
+  const carbs=Math.round(hours*carbsPerH);
+  const fluid=Math.round(hours*fluidPerH/50)*50;
+  const gels=Math.round(carbs/22);
+  return{hours:Math.round(hours*10)/10,carbs,fluid,gels,carbsPerH,note:s.type==='race'?'Race: start fueling tidlig, 85–90 g karbo/time. Drikk før du blir tørst.':'Test denne strategien nå så magen tåler den på race day.'};
+}
+
+// ── TRAINING LOAD / FORM (CTL·ATL·TSB) ──────────────────────────────────────────
+function loadOf(a){
+  if(a.trainingLoad)return a.trainingLoad;
+  const A=computeAthlete();
+  const min=timeToMin(a.time);
+  if(!min)return 0;
+  const frac=a.hr?Math.min(1,a.hr/A.maxHR):0.62;
+  return Math.round(min*Math.pow(frac,2)*1.85);
+}
+function computeForm(){
+  if(!GARMIN_ACTS.length)return null;
+  const byDay={};
+  GARMIN_ACTS.forEach(a=>{const d=a.date;if(!d)return;byDay[d]=(byDay[d]||0)+loadOf(a);});
+  const dates=Object.keys(byDay).sort();
+  const start=new Date(dates[0]);const end=new Date();
+  let ctl=0,atl=0;const series=[];
+  for(let t=new Date(start);t<=end;t.setDate(t.getDate()+1)){
+    const key=t.toISOString().slice(0,10);
+    const load=byDay[key]||0;
+    ctl=ctl+(load-ctl)/42;
+    atl=atl+(load-atl)/7;
+    series.push({date:key,ctl,atl,tsb:ctl-atl});
+  }
+  if(!series.length)return null;
+  const last=series[series.length-1];
+  return{ctl:Math.round(last.ctl),atl:Math.round(last.atl),tsb:Math.round(last.tsb),series};
+}
+function tsbLabel(tsb){
+  if(tsb>15)return['Veldig frisk','var(--run)','Godt uthvilt — bra for race eller nøkkeløkt'];
+  if(tsb>=5)return['Frisk','var(--run)','Uthvilt og klar for kvalitet'];
+  if(tsb>=-10)return['Nøytral','var(--bike)','Normal treningsform — hold planen'];
+  if(tsb>=-20)return['Sliten','var(--bike)','Produktiv belastning — pass på restitusjon'];
+  return['Overbelastet','var(--race)','Høy tretthet — vurder ekstra hviledag'];
+}
+function renderFormCurve(){
+  const el=document.getElementById('form-curve');if(!el)return;
+  const f=computeForm();
+  if(!f){el.innerHTML='<div class="empty" style="padding:20px">Ingen aktivitetsdata ennå.</div>';return;}
+  const[lbl,col,desc]=tsbLabel(f.tsb);
+  const S2=f.series.slice(-42);
+  const W=300,H=90,pad=4;
+  const maxV=Math.max(1,...S2.map(p=>Math.max(p.ctl,p.atl)));
+  const xs=i=>pad+i*(W-2*pad)/Math.max(1,S2.length-1);
+  const ys=v=>H-pad-(v/maxV)*(H-2*pad);
+  const line=(sel,color)=>`<polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" points="${S2.map((p,i)=>xs(i)+','+ys(sel(p))).join(' ')}"/>`;
+  el.innerHTML=`
+    <div class="form-curve-head">
+      <div>
+        <div class="form-tsb-val" style="color:${col}">${f.tsb>0?'+':''}${f.tsb}</div>
+        <div class="form-tsb-label">FORM (TSB) · ${lbl}</div>
+      </div>
+      <div style="display:flex;gap:16px">
+        <div class="form-metric"><div class="form-metric-val" style="color:var(--swim)">${f.ctl}</div><div class="form-metric-label">FITNESS (CTL)</div></div>
+        <div class="form-metric"><div class="form-metric-val" style="color:var(--bike)">${f.atl}</div><div class="form-metric-label">TRETTHET (ATL)</div></div>
+      </div>
+    </div>
+    <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block">
+      ${line(p=>p.ctl,'var(--swim)')}
+      ${line(p=>p.atl,'var(--bike)')}
+    </svg>
+    <div class="form-legend">
+      <div class="form-legend-item"><div class="form-legend-dot" style="background:var(--swim)"></div>Fitness (form du bygger)</div>
+      <div class="form-legend-item"><div class="form-legend-dot" style="background:var(--bike)"></div>Tretthet (fersk belastning)</div>
+    </div>
+    <div style="font-size:12px;color:var(--muted2);margin-top:8px;line-height:1.5">${desc}. Siste 6 uker.</div>`;
+}
+
+// ── PERSONAL PROFILE (strengths/weaknesses from Garmin) ─────────────────────────
+function renderProfile(){
+  const el=document.getElementById('profile-card');if(!el)return;
+  let sv=0,bi=0,ru=0;
+  GARMIN_ACTS.forEach(a=>{if(a.type==='swim')sv+=a.km;else if(a.type==='bike')bi+=a.km;else if(a.type==='run')ru+=a.km;});
+  // Discipline "readiness" relative to Ironman demands (rough share of needed training volume)
+  const need={swim:60,bike:1200,run:400}; // ballpark season km targets per discipline
+  const scoreOf=(v,n)=>Math.max(4,Math.min(100,Math.round(v/n*100)));
+  const rows=[
+    {k:'🏊 Svøm',v:scoreOf(sv,need.swim),color:'var(--swim)'},
+    {k:'🚴 Sykkel',v:scoreOf(bi,need.bike),color:'var(--bike)'},
+    {k:'🏃 Løp',v:scoreOf(ru,need.run),color:'var(--run)'},
+  ];
+  const sorted=[...rows].sort((a,b)=>b.v-a.v);
+  const strong=sorted[0],weak=sorted[sorted.length-1];
+  el.innerHTML=`
+    <div class="profile-title">🧬 Din profil (fra Garmin)</div>
+    <div class="profile-sub">Sterkest: <b style="color:${strong.color}">${strong.k}</b>. Størst gevinst: <b style="color:${weak.color}">${weak.k}</b>. Prioriter de svakeste grenene — det er der du henter mest tid på en Ironman.</div>
+    <div class="profile-bars">
+      ${rows.map(r=>`<div class="profile-bar-row">
+        <div class="profile-bar-label">${r.k}</div>
+        <div class="profile-bar-track"><div class="profile-bar-fill" style="width:${r.v}%;background:${r.color}"></div></div>
+        <div class="profile-bar-tag" style="color:${r.color}">${r.v>=70?'Sterk':r.v>=40?'OK':'Bygg'}</div>
+      </div>`).join('')}
+    </div>`;
+}
+
 // ── ADAPTIVE PLAN ──────────────────────────────────────────────────────────────
 function computeAdaptive(week){
   const weekStart=new Date(START_DATE.getTime()+(week-1)*7*86400000);
@@ -689,16 +985,20 @@ function computeAdaptive(week){
   const fatigued=(bb&&bb<35)||(hrv&&hrv.toLowerCase().includes('poor'));
   const lowEnergy=(bb&&bb<50)||(sleep&&sleep<55);
   const fresh=(bb&&bb>=65)&&(!hrv||hrv.toLowerCase().includes('balanced'));
+  const form=computeForm();
+  const tsb=form?form.tsb:null;
   let level=0;
   if(compliance<0.4)level=-1;
   if(fatigued)level-=1;
   if(lowEnergy&&level>-1)level=-1;
+  if(tsb!==null&&tsb<-22)level-=1;                       // deep fatigue from load
   if(fresh&&compliance>=0.75)level=1;
+  if(tsb!==null&&tsb>=8&&bb&&bb>=60&&compliance>=0.6&&level>=0)level=1; // rested & compliant
   level=Math.max(-2,Math.min(1,level));
   // Find last run cadence
   const lastRunWithCadence=GARMIN_ACTS.find(a=>a.type==='run'&&a.cadence);
   const cadenceTip=lastRunWithCadence&&lastRunWithCadence.cadence<172?`Kadens var ${lastRunWithCadence.cadence} spm siste løp — jobb mot 174–180 i dag`:null;
-  return{compliance:Math.round(compliance*100),level,matched,total:nonRest.length,fatigued,fresh,lowEnergy,cadenceTip,bb,hrv};
+  return{compliance:Math.round(compliance*100),level,matched,total:nonRest.length,fatigued,fresh,lowEnergy,cadenceTip,bb,hrv,tsb};
 }
 
 function adaptedSession(session,level){
@@ -809,15 +1109,17 @@ function render(){
     b.classList.toggle('active',S.form===f);
   });
 
-  renderUke();
-  renderTracker();
-  renderHistory();
+  try{renderUke();}catch(e){console.warn('renderUke',e);}
+  try{renderTracker();}catch(e){console.warn('renderTracker',e);}
+  try{renderHistory();}catch(e){console.warn('renderHistory',e);}
+  try{renderAnalysis();}catch(e){console.warn('renderAnalysis',e);}
 }
 
 // ── RENDER UKE (ADAPTIVE PLAN) ─────────────────────────────────────────────────
 function renderUke(){
   const w=S.week;
   document.getElementById('uke-header-title').textContent=`Uke ${w} av 12`;
+  try{renderProfile();}catch(e){console.warn('profile',e);}
   const adapt=computeAdaptive(w);
 
   // Adaptive banner
@@ -865,7 +1167,7 @@ function renderUke(){
     const el=document.createElement('div');
     el.className='day-card'+(isDone?' done':'')+(day.adapted?' adapted':'');
     const stars=S.completed[key]?.star?'★'.repeat(S.completed[key].star):'';
-    const tgt=getSessionTargets(day);
+    let tgt=null;try{tgt=getSessionTargets(day);}catch(e){console.warn('targets',e);}
     const zoneBadge=tgt&&day.type!=='rest'?`<div class="zone-pill" style="background:rgba(${tgt.rgb},0.12);color:rgba(${tgt.rgb},1)">S${tgt.zone} ${tgt.bpm.lo}–${tgt.bpm.hi}bpm${tgt.pace?' · '+tgt.pace+'/km':''}</div>`:'';
     el.innerHTML=`
       ${isDone?'<div class="done-check">✓</div>':''}
@@ -946,6 +1248,149 @@ function renderHistory(){
   });
 }
 
+// ── ANALYSIS HUB (session overview + volume/quality analysis) ──────────────────
+function sessionDate(w,d){return new Date(START_DATE.getTime()+((w-1)*7+d)*86400000);}
+function garminMatchOn(w,d,type){
+  if(type==='rest')return null;
+  const ds=sessionDate(w,d).toISOString().slice(0,10);
+  return GARMIN_ACTS.find(a=>a.date===ds&&(a.type===type||(type==='brick'&&(a.type==='run'||a.type==='bike'))))||null;
+}
+function sessionStatus(w,d){
+  const s=PLAN[w-1][d];const key=`w${w}d${d}`;
+  if(s.type==='rest')return{st:'rest'};
+  if(S.completed[key])return{st:'done'};
+  if(garminMatchOn(w,d,s.type))return{st:'garmin'};
+  const day0=new Date();day0.setHours(0,0,0,0);
+  if(sessionDate(w,d)<day0)return{st:'missed'};
+  return{st:'upcoming'};
+}
+function analyzeTraining(){
+  const A=computeAthlete();
+  const curW=autoWeek();
+  const actual=calcKm();
+  const planned=SEASON_GOALS;
+  const ptd={swim:0,bike:0,run:0};
+  for(let w=1;w<=curW&&w<=12;w++)PLAN[w-1].forEach(s=>{ptd.swim+=s.km[0];ptd.bike+=s.km[1];ptd.run+=s.km[2];});
+  const weekly=[];
+  for(let w=1;w<=12;w++){
+    let total=0,done=0,plannedKm=0;
+    PLAN[w-1].forEach((s,d)=>{plannedKm+=s.km[0]+s.km[1]+s.km[2];if(s.type!=='rest'){total++;const st=sessionStatus(w,d).st;if(st==='done'||st==='garmin')done++;}});
+    weekly.push({w,total,done,plannedKm:Math.round(plannedKm)});
+  }
+  const missed={swim:0,bike:0,run:0,brick:0};let doneTot=0,pastTot=0;
+  for(let w=1;w<=12;w++)PLAN[w-1].forEach((s,d)=>{
+    if(s.type==='rest')return;const st=sessionStatus(w,d).st;
+    if(st==='missed'){pastTot++;missed[s.type]=(missed[s.type]||0)+1;}
+    else if(st==='done'||st==='garmin'){pastTot++;doneTot++;}
+  });
+  const compliance=pastTot?Math.round(doneTot/pastTot*100):null;
+  // Intensity distribution (easy = sone 1-2, hard = sone 3+)
+  const z2ceil=A.restHR+0.70*A.hrr;
+  let easySec=0,hardSec=0;
+  GARMIN_ACTS.forEach(a=>{
+    if(!a.hr||!['run','bike','swim','brick'].includes(a.type))return;
+    const sec=timeToMin(a.time)*60;if(!sec)return;
+    if(a.hr<=z2ceil)easySec+=sec;else hardSec+=sec;
+  });
+  const totSec=easySec+hardSec;
+  const easyPct=totSec?Math.round(easySec/totSec*100):null;
+  // Personal records
+  const runs=GARMIN_ACTS.filter(a=>a.type==='run');
+  const bestRun=runs.filter(a=>a.pace&&a.km>=3).sort((x,y)=>paceToSec(x.pace)-paceToSec(y.pace))[0];
+  const longRun=[...runs].sort((x,y)=>y.km-x.km)[0];
+  const longBike=[...GARMIN_ACTS.filter(a=>a.type==='bike')].sort((x,y)=>y.km-x.km)[0];
+  const longSwim=[...GARMIN_ACTS.filter(a=>a.type==='swim')].sort((x,y)=>y.km-x.km)[0];
+  return{curW,actual,planned,ptd,weekly,missed,compliance,doneTot,pastTot,easyPct,hardPct:easyPct!=null?100-easyPct:null,bestRun,longRun,longBike,longSwim};
+}
+function renderAnalysis(){
+  const a=analyzeTraining();
+  // Volume plan vs actual (white marker = expected by now)
+  const volBar=(label,color,act,plan,exp)=>{
+    const pct=plan?Math.min(100,Math.round(act/plan*100)):0;
+    const tpct=plan?Math.min(100,Math.round(exp/plan*100)):0;
+    const ontrack=act>=exp*0.9;
+    return`<div class="an-bar-row"><div class="an-bar-label">${label}</div>
+      <div class="an-bar-track"><div class="an-bar-fill" style="width:${pct}%;background:${color}"></div><div class="an-bar-target" style="left:${tpct}%"></div></div>
+      <div class="an-bar-val" style="color:${ontrack?'var(--run)':'var(--bike)'}">${act}/${plan} km</div></div>`;
+  };
+  const volEl=document.getElementById('an-volume');
+  if(volEl)volEl.innerHTML=
+    volBar('🏊 Svøm','var(--swim)',a.actual.sv,Math.round(a.planned.swim),a.ptd.swim)+
+    volBar('🚴 Sykkel','var(--bike)',a.actual.bi,Math.round(a.planned.bike),a.ptd.bike)+
+    volBar('🏃 Løp','var(--run)',a.actual.ru,Math.round(a.planned.run),a.ptd.run)+
+    `<div style="font-size:11px;color:var(--muted2);margin-top:10px;line-height:1.5">Hvit strek = forventet volum i uke ${a.curW}. ${a.compliance!=null?`Gjennomføring: <b style="color:${a.compliance>=80?'var(--run)':'var(--bike)'}">${a.compliance}%</b> (${a.doneTot}/${a.pastTot} økter).`:'Ingen økter forfalt ennå.'}</div>`;
+  // Quality — intensity distribution
+  const qEl=document.getElementById('an-quality');
+  if(qEl){
+    if(a.easyPct==null)qEl.innerHTML='<div style="font-size:12px;color:var(--muted2)">Synk Garmin-aktiviteter for å se intensitetsfordeling.</div>';
+    else qEl.innerHTML=`
+      <div class="intensity-bar">
+        <div class="intensity-seg" style="flex:${a.easyPct};background:var(--run)">${a.easyPct>10?a.easyPct+'%':''}</div>
+        <div class="intensity-seg" style="flex:${a.hardPct};background:var(--bike)">${a.hardPct>10?a.hardPct+'%':''}</div>
+      </div>
+      <div style="display:flex;gap:14px;font-size:10px;color:var(--muted2);font-weight:600">
+        <div><span style="color:var(--run)">■</span> Sone 1–2 (rolig)</div><div><span style="color:var(--bike)">■</span> Sone 3+ (hard)</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.5">${a.easyPct>=75?'God polarisert fordeling — hold ~80% rolig for å bygge aerob base uten å grave deg ned.':'For Ironman bør ~80% av tiden være rolig (sone 1–2). Nå er du på '+a.easyPct+'%. Legg flere økter i rolig tempo.'}</div>`;
+  }
+  // Personal records
+  const pbEl=document.getElementById('an-pbs');
+  if(pbEl){
+    const card=(val,lbl,sub,color)=>`<div class="pb-card"><div class="pb-val" style="color:${color||'var(--text)'}">${val}</div><div class="pb-lbl">${lbl}</div>${sub?`<div class="pb-sub">${sub}</div>`:''}</div>`;
+    const dt=a=>a?new Date(a.date).toLocaleDateString('no',{day:'numeric',month:'short'}):'';
+    pbEl.innerHTML=`<div class="pb-grid">
+      ${card(a.bestRun?a.bestRun.pace+'/km':'—','RASKESTE PACE',a.bestRun?a.bestRun.km+' km · '+dt(a.bestRun):'','var(--race)')}
+      ${card(a.longRun?a.longRun.km+' km':'—','LENGSTE LØP',dt(a.longRun),'var(--run)')}
+      ${card(a.longBike?a.longBike.km+' km':'—','LENGSTE SYKKEL',dt(a.longBike),'var(--bike)')}
+      ${card(a.longSwim?a.longSwim.km+' km':'—','LENGSTE SVØM',dt(a.longSwim),'var(--swim)')}
+    </div>`;
+  }
+  // Insights
+  const insEl=document.getElementById('an-insights');
+  if(insEl){
+    const ins=[];
+    if(a.compliance!=null)ins.push([a.compliance>=80?'✅':'📋',`${a.doneTot} av ${a.pastTot} planlagte økter fullført (${a.compliance}%).`]);
+    [['Svøm','swim','sv'],['Sykkel','bike','bi'],['Løp','run','ru']].forEach(([nm,pk,ak])=>{
+      const exp=a.ptd[pk],act=a.actual[ak];
+      if(exp>5){const diff=Math.round((act-exp)/exp*100);
+        if(diff<=-15)ins.push(['⬇️',`${nm} ligger ${Math.abs(diff)}% under planlagt volum — prioriter denne grenen.`]);
+        else if(diff>=15)ins.push(['⬆️',`${nm} er ${diff}% over plan — bra, men pass på balanse og restitusjon.`]);}
+    });
+    if(a.missed.swim>=2)ins.push(['🏊',`${a.missed.swim} svømmeøkter hoppet over — svakeste gren. Flytt heller enn å droppe.`]);
+    if(a.missed.bike>=2)ins.push(['🚴',`${a.missed.bike} sykkeløkter hoppet over — sykkel er der du henter mest tid på en Ironman.`]);
+    if(a.easyPct!=null){if(a.easyPct>=75)ins.push(['🎯',`${a.easyPct}% av tiden i sone 1–2 — solid aerob base.`]);else ins.push(['⚠️',`Bare ${a.easyPct}% rolig trening — for hardt totalt. Mer sone 1–2.`]);}
+    if(!ins.length)ins.push(['🚀','Ingen data ennå — logg økter eller synk Garmin for å få analyse.']);
+    insEl.innerHTML=ins.map(([ic,tx])=>`<div class="insight"><div class="insight-ic">${ic}</div><div class="insight-tx">${tx}</div></div>`).join('');
+  }
+  // Full session log
+  const logEl=document.getElementById('an-log');
+  if(logEl){
+    const dows=['M','T','O','T','F','L','S'];
+    let html='';
+    for(let w=1;w<=12;w++){
+      const wk=a.weekly[w-1];
+      const tagCol=wk.done===wk.total&&wk.total>0?'var(--run)':wk.done>0?'var(--bike)':'var(--surface2)';
+      const tagTx=wk.done===wk.total&&wk.total>0?'✓ Fullført':`${wk.done}/${wk.total}`;
+      let cells='';
+      PLAN[w-1].forEach((s,d)=>{
+        const st=sessionStatus(w,d).st;
+        let bg='var(--surface2)',mark='',op='1';
+        if(s.type==='rest'){bg='var(--surface2)';op='.4';}
+        else if(st==='done'){bg='rgba(0,230,118,.16)';mark='<span class="log-day-mark" style="color:var(--run)">✓</span>';}
+        else if(st==='garmin'){bg='rgba(0,212,255,.16)';mark='<span class="log-day-mark" style="color:var(--swim)">✓</span>';}
+        else if(st==='missed'){bg='rgba(255,55,95,.14)';mark='<span class="log-day-mark" style="color:var(--race)">✗</span>';}
+        else{bg='var(--surface3)';}
+        cells+=`<div class="log-day" style="background:${bg};opacity:${op}"><div class="log-day-dow">${dows[d]}</div><div>${typeEmoji(s.type)}</div>${mark}</div>`;
+      });
+      html+=`<div class="log-week">
+        <div class="log-week-head"><div class="log-week-title">Uke ${w}${w===a.curW?' · nå':''}</div>
+        <div class="log-week-tag" style="background:${tagCol};color:${tagCol==='var(--surface2)'?'var(--muted2)':'#0a0a0a'}">${tagTx}</div></div>
+        <div class="log-days">${cells}</div></div>`;
+    }
+    logEl.innerHTML=html;
+  }
+}
+
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function openWorkout(week,i){
   const raw=PLAN[week-1][i];
@@ -958,7 +1403,7 @@ function openWorkout(week,i){
   let bodyHtml=d.desc?`<div class="workout-block"><h4>OM ØKTEN</h4><p>${d.desc}</p></div>`:'';
   if(d.adapted)bodyHtml=`<div class="workout-block" style="border:1px solid rgba(255,106,0,0.3)"><h4>⚡ JUSTERT AV ADAPTIV PLAN</h4><p>Originalt: ${raw.detail}. Justert basert på kropp-signaler.</p></div>`+bodyHtml;
   // Personal targets block
-  const tgt=getSessionTargets(d);
+  let tgt=null;try{tgt=getSessionTargets(d);}catch(e){console.warn('targets',e);}
   if(tgt){
     const paceRow=tgt.pace?`<div class="target-item"><div class="target-label">TEMPO</div><div class="target-val">${tgt.pace}<span style="font-size:13px;font-weight:600;color:var(--muted2)">/km</span></div><div class="target-sub">${tgt.paceDesc}</div></div>`:'';
     const extraRow=tgt.extra?`<div class="target-item"><div class="target-label">${tgt.extraLabel}</div><div class="target-val">${tgt.extra}</div></div>`:'';
@@ -974,6 +1419,19 @@ function openWorkout(week,i){
         ${paceRow}${extraRow}
       </div>
       <div class="target-desc">${tgt.zoneDesc}</div>
+    </div>`;
+  }
+  // Fueling (long sessions, bricks, race)
+  const fuel=getFueling(d);
+  if(fuel){
+    bodyHtml+=`<div class="fuel-block">
+      <h4>⛽ FUELING (${fuel.hours}t økt)</h4>
+      <div class="fuel-grid">
+        <div class="fuel-item"><div class="fuel-val" style="color:var(--gold)">${fuel.carbs}g</div><div class="fuel-lbl">KARBO (~${fuel.carbsPerH}/t)</div></div>
+        <div class="fuel-item"><div class="fuel-val" style="color:var(--swim)">${fuel.fluid}ml</div><div class="fuel-lbl">VÆSKE</div></div>
+        <div class="fuel-item"><div class="fuel-val">${fuel.gels}</div><div class="fuel-lbl">GELER (≈22g)</div></div>
+      </div>
+      <div class="fuel-note">${fuel.note}</div>
     </div>`;
   }
   // Tech tips
@@ -1010,6 +1468,7 @@ function showPage(name){
   document.getElementById('nav-'+name).classList.add('active');
   if(name==='garmin')renderGarmin();
   if(name==='kropp')renderBodyData();
+  if(name==='mer'){try{renderAnalysis();}catch(e){console.warn('renderAnalysis',e);}}
 }
 function setForm(f){S.form=f;save();render();}
 
@@ -1077,6 +1536,13 @@ function openGarminDetail(idx){
   if(act.elev)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.elev}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">↑ m</div></div>`;
   if(act.cadence)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:${act.cadence>=172?'var(--run)':'var(--bike)'}">${act.cadence}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">KADENS spm</div></div>`;
   if(act.kcal)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.kcal}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">KCAL</div></div>`;
+  if(act.runPower)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--brick)">${act.runPower}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">WATT</div></div>`;
+  if(act.swolf)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:${act.swolf<35?'var(--run)':'var(--bike)'}">${act.swolf}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">SWOLF</div></div>`;
+  if(act.gct)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.gct}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">GCT ms</div></div>`;
+  if(act.vertOsc)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.vertOsc}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">VERT.OSC cm</div></div>`;
+  if(act.aerobicTE)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--run)">${act.aerobicTE}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">AEROB TE</div></div>`;
+  if(act.anaerobicTE)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--brick)">${act.anaerobicTE}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">ANAEROB TE</div></div>`;
+  if(act.trainingLoad)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--bike)">${Math.round(act.trainingLoad)}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">LOAD</div></div>`;
   html+='</div>';
   if(act.type==='run'&&act.cadence){
     const onTarget=act.cadence>=172;
@@ -1120,6 +1586,7 @@ function renderBodyData(){
   const data=BODY_DATA;
   if(bodySyncTime)document.getElementById('kropp-sync-time').textContent='Sist synket: '+new Date(bodySyncTime).toLocaleString('no',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   else document.getElementById('kropp-sync-time').textContent='Trykk Oppdater for å hente Garmin-data';
+  try{renderFormCurve();}catch(e){console.warn('formcurve',e);}
   if(!data)return;
   const bb=data.bodyBattery?.current;
   const bbMax=226;
