@@ -691,6 +691,7 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
       </div>
     </div>
     <button class="modal-btn primary" id="m-complete-btn" onclick="completeWorkout()">FULLFØR ØKT ✓</button>
+    <button class="modal-btn secondary" id="m-undo-btn" style="display:none;color:var(--race)" onclick="uncompleteWorkout()">↩︎ Angre — marker som ikke gjort</button>
     <button class="modal-btn secondary" onclick="closeModal()">Lukk</button>
   </div>
 </div>
@@ -890,6 +891,7 @@ const SEASON_GOALS = PLAN.flat().reduce((a,d)=>{const add=s=>{a.swim+=s.km[0];a.
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let S = JSON.parse(localStorage.getItem('im_state')||'null') || {week:1,completed:{},form:null,pendingRating:0};
+if(!S.dismissed)S.dismissed={}; // sessions the user manually un-checked (so sync won't re-auto-complete them)
 let activeKey = null;
 function save(){localStorage.setItem('im_state',JSON.stringify(S));}
 
@@ -1399,7 +1401,7 @@ function renderUke(){
           ${isDone?'':zoneBadge}
         </div>
         <span class="day-tag ${sess.type}">${sess.dur}</span>`;
-      if(!isDone&&rawS.type!=='rest'){const wi=w,ii=i,which=(x.slot==='PM')?'_2':'';el.onclick=()=>openWorkout(wi,ii,which);el.classList.add('tappable');}
+      if(rawS.type!=='rest'){const wi=w,ii=i,which=(x.slot==='PM')?'_2':'';el.onclick=()=>openWorkout(wi,ii,which);el.classList.add('tappable');}
       dl.appendChild(el);
     });
   }
@@ -1892,10 +1894,11 @@ function openWorkout(week,i,which){
   const raw=which==='_2'?day.second:day;
   if(!raw)return;
   const key=`w${week}d${i}${which}`;
-  const isNext=(nextSessionInfo()||{}).key===key;
+  const doneRec=S.completed[key];
+  const isNext=!doneRec&&(nextSessionInfo()||{}).key===key;
   const d=isNext?adaptedSession(raw,computeReadiness().adjust):{...raw,adapted:false};
-  activeKey=key;S.pendingRating=0;
-  document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
+  activeKey=key;S.pendingRating=doneRec&&doneRec.star?doneRec.star:0;
+  document.querySelectorAll('.star').forEach((s,idx)=>s.classList.toggle('active',idx<S.pendingRating));
   document.getElementById('m-title').textContent=`${typeEmoji(d.type)} ${d.name}`;
   document.getElementById('m-sub').textContent=d.detail+(d.dur!=='—'?' · '+d.dur:'');
   let bodyHtml=d.desc?`<div class="workout-block"><h4>OM ØKTEN</h4><p>${d.desc}</p></div>`:'';
@@ -1939,6 +1942,18 @@ function openWorkout(week,i,which){
   if(d.type==='bike'){tips.push('Spis og drikk hvert 20–30 min på sykkel.');}
   if(tips.length)bodyHtml+=`<div class="workout-block"><h4>🎯 TEKNIKKFOKUS</h4><p>${tips.join('<br>')}</p></div>`;
   document.getElementById('m-body').innerHTML=bodyHtml;
+  // Completed-state footer: allow re-rating and undo
+  const compBtn=document.getElementById('m-complete-btn');
+  const undoBtn=document.getElementById('m-undo-btn');
+  if(doneRec){
+    compBtn.textContent=doneRec.auto?'✓ LOGGET FRA GARMIN — LAGRE ENDRING':'LAGRE ENDRING ✓';
+    if(undoBtn)undoBtn.style.display='block';
+    if(doneRec.auto){const dtxt=doneRec.date?new Date(doneRec.date).toLocaleDateString('no',{day:'numeric',month:'short'}):'';
+      document.getElementById('m-body').innerHTML=`<div class="garmin-match">⌚ Automatisk huket av fra Garmin${dtxt?' ('+dtxt+')':''}. Feil match? Trykk «Angre» nederst.</div>`+document.getElementById('m-body').innerHTML;}
+  } else {
+    compBtn.textContent='FULLFØR ØKT ✓';
+    if(undoBtn)undoBtn.style.display='none';
+  }
   document.getElementById('m-rating-section').style.display=d.type==='rest'?'none':'block';
   document.getElementById('modal').classList.add('open');
 }
@@ -1948,7 +1963,8 @@ function openTodayWorkout(){
   openWorkout(n.w,n.d,n.slot==='PM'?'_2':'');
 }
 function rateStar(n){S.pendingRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<n));}
-function completeWorkout(){if(!activeKey)return;S.completed[activeKey]={star:S.pendingRating,date:new Date().toISOString()};save();closeModal();render();}
+function completeWorkout(){if(!activeKey)return;const prev=S.completed[activeKey]||{};S.completed[activeKey]={...prev,star:S.pendingRating||prev.star||null,date:prev.date||new Date().toISOString()};if(S.dismissed)delete S.dismissed[activeKey];save();closeModal();render();}
+function uncompleteWorkout(){if(!activeKey)return;delete S.completed[activeKey];S.dismissed=S.dismissed||{};S.dismissed[activeKey]=true;save();closeModal();render();}
 function closeModal(){document.getElementById('modal').classList.remove('open');activeKey=null;}
 function closeModalBg(e){if(e.target===document.getElementById('modal'))closeModal();}
 
@@ -1985,7 +2001,7 @@ function autoCompleteFromGarmin(){
     const daysSince=Math.floor((new Date(a.date)-START_DATE)/86400000);
     if(daysSince<0)return;const week=Math.floor(daysSince/7)+1,day=daysSince%7;
     if(week<1||week>12)return;
-    const cand=daySessions(week,day).find(x=>x.s.type!=='rest'&&!S.completed[x.key]&&(x.s.type===a.type||(x.s.type==='brick'&&(a.type==='run'||a.type==='bike'))));
+    const cand=daySessions(week,day).find(x=>x.s.type!=='rest'&&!S.completed[x.key]&&!(S.dismissed&&S.dismissed[x.key])&&(x.s.type===a.type||(x.s.type==='brick'&&(a.type==='run'||a.type==='bike'))));
     if(cand){S.completed[cand.key]={auto:true,date:String(a.date).slice(0,10)+'T12:00:00',garminId:a.id,star:null};changed=true;}
   });
   if(changed)save();
