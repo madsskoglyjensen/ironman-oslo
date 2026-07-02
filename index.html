@@ -654,6 +654,11 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
   <div id="week-summary"></div>
   <div class="section-title" style="margin-top:16px">HISTORIKK</div>
   <div id="history-list"><div class="empty">Ingen økter logget ennå.</div></div>
+  <div style="text-align:center;padding:22px 20px 30px">
+    <span class="tappable" onclick="repairData()" style="font-size:11px;color:var(--muted2);text-decoration:underline">Reparer app-data</span>
+    <span style="color:var(--muted)"> · </span>
+    <span class="tappable" onclick="resetData()" style="font-size:11px;color:var(--race);text-decoration:underline">Nullstill alt</span>
+  </div>
 </div>
 
 <!-- RACE DAY -->
@@ -916,12 +921,41 @@ const CHALLENGES_DEF = [
 // Season km goals (primary + second sessions across all 12 weeks)
 const SEASON_GOALS = PLAN.flat().reduce((a,d)=>{const add=s=>{a.swim+=s.km[0];a.bike+=s.km[1];a.run+=s.km[2];};add(d);if(d.second)add(d.second);return a;},{swim:0,bike:0,run:0});
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let S = JSON.parse(localStorage.getItem('im_state')||'null') || {week:1,completed:{},form:null,pendingRating:0};
-if(!S.dismissed)S.dismissed={}; // sessions the user manually un-checked (so sync won't re-auto-complete them)
-if(!S.assign)S.assign={};       // key -> weekday index override (moved sessions)
+// ── STATE (with a safety net: never crash on bad/corrupt storage) ───────────────
+function safeParse(str,fallback){try{const v=JSON.parse(str);return v==null?fallback:v;}catch(e){return fallback;}}
+function loadState(){
+  let s=safeParse(localStorage.getItem('im_state'),null);
+  if(!s||typeof s!=='object'||Array.isArray(s))s={};
+  s.v=2;
+  if(typeof s.week!=='number'||s.week<1||s.week>12)s.week=1;
+  if(!s.completed||typeof s.completed!=='object')s.completed={};
+  if(!s.dismissed||typeof s.dismissed!=='object')s.dismissed={};
+  if(!s.assign||typeof s.assign!=='object')s.assign={};
+  if(typeof s.pendingRating!=='number')s.pendingRating=0;
+  return s;
+}
+let S = loadState();
 let activeKey = null;
-function save(){localStorage.setItem('im_state',JSON.stringify(S));}
+function save(){try{localStorage.setItem('im_state',JSON.stringify(S));}catch(e){console.warn('Kunne ikke lagre (lagringsplass?)',e);}}
+// Remove entries that no longer point to a real session, clamp move-days to 0–6
+function sanitizeState(){
+  let changed=false;
+  ['completed','dismissed','assign'].forEach(b=>{if(!S[b]||typeof S[b]!=='object')S[b]={};Object.keys(S[b]).forEach(k=>{if(!sessFromKey(k)){delete S[b][k];changed=true;}});});
+  Object.keys(S.assign).forEach(k=>{const v=S.assign[k];if(typeof v!=='number'||v<0||v>6){delete S.assign[k];changed=true;}});
+  if(changed)save();
+  return changed;
+}
+function repairData(){
+  const n=sanitizeState();try{render();}catch(e){}
+  const c=document.getElementById('garmin-modal-content');
+  if(c){c.innerHTML=`<div style="font-size:19px;font-weight:900;margin-bottom:8px">✅ Data sjekket</div><div style="font-size:14px;color:var(--muted2);line-height:1.6">${n?'Ryddet bort ugyldige oppføringer. ':'Alt så allerede riktig ut. '}Fremgangen din er intakt.</div>`;
+    document.getElementById('garmin-modal').classList.add('open');}
+}
+function resetData(){
+  if(typeof confirm==='function'&&!confirm('Nullstille ALL fremgang? Dette sletter loggede økter, flyttinger og notater. Kan ikke angres.'))return;
+  try{localStorage.removeItem('im_state');}catch(e){}
+  if(typeof location!=='undefined'&&location.reload)location.reload();
+}
 
 // ── GARMIN SEED DATA ──────────────────────────────────────────────────────────
 const GARMIN_SEED=[
@@ -944,9 +978,10 @@ const GARMIN_SEED=[
   {date:'2026-03-11',name:'Oslo Løping',type:'run',km:11.59,time:'53:54',pace:'4:39',hr:150,elev:65},
   {date:'2026-03-09',name:'Oslo Fotball',type:'soccer',km:7.20,time:'1:30:19',speed:4.8,hr:141,kcal:1015},
 ];
-let GARMIN_ACTS=filterActs(JSON.parse(localStorage.getItem('garmin_acts')||'null')||GARMIN_SEED);
+let GARMIN_ACTS=filterActs(safeParse(localStorage.getItem('garmin_acts'),null)||GARMIN_SEED);
+if(!Array.isArray(GARMIN_ACTS))GARMIN_ACTS=filterActs(GARMIN_SEED);
 let garminSyncTime=localStorage.getItem('garmin_sync_time')||null;
-let BODY_DATA=JSON.parse(localStorage.getItem('garmin_body')||'null');
+let BODY_DATA=safeParse(localStorage.getItem('garmin_body'),null);
 let bodySyncTime=localStorage.getItem('garmin_body_time')||null;
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
@@ -972,21 +1007,15 @@ function bbStatus(v){
 function hrvColor(s){if(!s)return'var(--muted2)';const l=s.toLowerCase();if(l.includes('balanced'))return'var(--run)';if(l.includes('poor'))return'var(--race)';return'var(--bike)';}
 function hrvLabel(s){if(!s)return'—';const l=s.toLowerCase();if(l.includes('balanced'))return'✅ Balansert';if(l.includes('unbalanced'))return'⚠️ Ubalansert';if(l.includes('poor'))return'🔴 Svak';return s;}
 
+// Kilometers ALWAYS come from real Garmin activities (actual distances, not planned)
 function calcKm(){
   let sv=0,bi=0,ru=0;
-  const garminDates=new Set(GARMIN_ACTS.filter(a=>new Date(a.date)>=START_DATE).map(a=>a.date));
   GARMIN_ACTS.forEach(a=>{
-    const d=new Date(a.date);
-    if(d<START_DATE)return;
-    if(a.type==='swim')sv+=a.km;
-    else if(a.type==='bike')bi+=a.km;
-    else if(a.type==='run')ru+=a.km;
-  });
-  Object.keys(S.completed).forEach(k=>{
-    const s=sessFromKey(k);if(!s)return;
-    const val=S.completed[k];
-    if(val&&val.date&&garminDates.has(String(val.date).slice(0,10)))return; // auto/garmin already counted above
-    sv+=s.km[0];bi+=s.km[1];ru+=s.km[2];
+    const km=+a.km||0;
+    if(a.type==='swim')sv+=km;
+    else if(a.type==='bike')bi+=km;
+    else if(a.type==='run')ru+=km;
+    else if(a.type==='brick')bi+=km; // brick distance logged as bike-ish
   });
   return{sv:Math.round(sv*10)/10,bi:Math.round(bi),ru:Math.round(ru)};
 }
@@ -1467,19 +1496,20 @@ function renderUke(){
 
 // ── TRACKER & HISTORY ─────────────────────────────────────────────────────────
 function renderTracker(){
-  let sv=0,bi=0,ru=0,br=0,total=0,sn=0,bn=0,rn=0;const ratings=[];
+  // KM + discipline counts come from real Garmin activities
+  const km=calcKm();
+  const cnt=t=>GARMIN_ACTS.filter(a=>a.type===t).length;
+  let br=0,total=0;const ratings=[];
   Object.entries(S.completed).forEach(([k,v])=>{
     const d=sessFromKey(k);if(!d)return;
-    sv+=d.km[0];bi+=d.km[1];ru+=d.km[2];
-    if(d.type==='swim')sn++;if(d.type==='bike')bn++;if(d.type==='run')rn++;
     if(d.type==='brick')br++;total++;if(v.star)ratings.push(v.star);
   });
-  document.getElementById('t-swim-km').textContent=Math.round(sv*10)/10;
-  document.getElementById('t-swim-n').textContent=`${sn} svømminger`;
-  document.getElementById('t-bike-km').textContent=Math.round(bi);
-  document.getElementById('t-bike-n').textContent=`${bn} sykkelturer`;
-  document.getElementById('t-run-km').textContent=Math.round(ru);
-  document.getElementById('t-run-n').textContent=`${rn} løpeturer`;
+  document.getElementById('t-swim-km').textContent=km.sv;
+  document.getElementById('t-swim-n').textContent=`${cnt('swim')} svømminger`;
+  document.getElementById('t-bike-km').textContent=km.bi;
+  document.getElementById('t-bike-n').textContent=`${cnt('bike')} sykkelturer`;
+  document.getElementById('t-run-km').textContent=km.ru;
+  document.getElementById('t-run-n').textContent=`${cnt('run')} løpeturer`;
   document.getElementById('t-brick-n').textContent=br;
   document.getElementById('t-total').textContent=total;
   const avg=ratings.length?(ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1):null;
@@ -2069,7 +2099,9 @@ function matchToPlan(act){
   const week=Math.floor(daysSinceStart/7)+1;
   const day=daysSinceStart%7;
   if(week<1||week>12)return null;
-  const cand=daySessions(week,day).find(x=>x.s.type!=='rest'&&(x.s.type===act.type||(x.s.type==='brick'&&(act.type==='run'||act.type==='bike'))));
+  // STRICT: a Garmin activity matches ONLY a planned session of the exact same discipline,
+  // on the exact same date. No cross-type matching (a swim never matches a bike).
+  const cand=daySessions(week,day).find(x=>x.s.type!=='rest'&&x.s.type===act.type);
   if(cand)return{week,day,planned:cand.s,key:cand.key};
   return null;
 }
@@ -2081,7 +2113,8 @@ function autoCompleteFromGarmin(){
     const daysSince=Math.floor((new Date(a.date)-START_DATE)/86400000);
     if(daysSince<0)return;const week=Math.floor(daysSince/7)+1,day=daysSince%7;
     if(week<1||week>12)return;
-    const cand=daySessions(week,day).find(x=>x.s.type!=='rest'&&!S.completed[x.key]&&!(S.dismissed&&S.dismissed[x.key])&&(x.s.type===a.type||(x.s.type==='brick'&&(a.type==='run'||a.type==='bike'))));
+    // STRICT exact-type match on the same date only (swim→swim, bike→bike, run→run, strength→strength)
+    const cand=daySessions(week,day).find(x=>x.s.type!=='rest'&&x.s.type===a.type&&!S.completed[x.key]&&!(S.dismissed&&S.dismissed[x.key]));
     if(cand){S.completed[cand.key]={auto:true,date:String(a.date).slice(0,10)+'T12:00:00',garminId:a.id,star:null};changed=true;}
   });
   if(changed)save();
@@ -2331,17 +2364,21 @@ async function syncBodyData(){
   if(btn){btn.textContent='⚠️ Feil';setTimeout(()=>{btn.textContent='⟳ Oppdater';btn.classList.remove('syncing');},2500);}
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
-S.week=autoWeek();save();
-try{autoCompleteFromGarmin();}catch(e){console.warn('autocomplete',e);}
-// Auto-sync body data if more than 4 hours old
-if(!bodySyncTime||Date.now()-new Date(bodySyncTime)>4*3600000){
-  setTimeout(()=>syncBodyData(),1500);
+// ── INIT (guarded — a crash here can never leave a blank app) ───────────────────
+if(typeof window!=='undefined')window.addEventListener('error',function(e){try{console.warn('runtime error:',e&&e.message);}catch(_){}});
+try{
+  S.week=autoWeek();
+  try{sanitizeState();}catch(e){console.warn('sanitize',e);}
+  save();
+  try{autoCompleteFromGarmin();}catch(e){console.warn('autocomplete',e);}
+  if(!bodySyncTime||Date.now()-new Date(bodySyncTime)>4*3600000){setTimeout(()=>{try{syncBodyData();}catch(e){}},1500);}
+  render();
+  renderBodyData();
+  try{['days-to-race','ring-swim-val','ring-bike-val','ring-run-val'].forEach(id=>{const el=document.getElementById(id);if(el){const v=parseFloat(el.textContent);if(!isNaN(v))animateCount(el,v,1000);}});}catch(e){}
+}catch(e){
+  console.warn('init failed',e);
+  try{document.body.insertAdjacentHTML('afterbegin','<div style="padding:44px 20px;text-align:center;color:#f4efe9;font-family:-apple-system,sans-serif"><div style="font-size:18px;font-weight:900;margin-bottom:10px">Noe gikk galt ved oppstart</div><div style="font-size:13px;color:#a99e90;margin-bottom:18px">Prøv å reparere dataene dine — fremgangen beholdes.</div><button onclick="try{repairData();location.reload()}catch(_){resetData()}" style="background:#ff7a1a;color:#fff;border:none;border-radius:12px;padding:13px 22px;font-weight:800">Reparer app-data</button></div>');}catch(_){}
 }
-render();
-renderBodyData();
-// One-time count-up on the hero numbers for a livelier feel
-try{['days-to-race','ring-swim-val','ring-bike-val','ring-run-val'].forEach(id=>{const el=document.getElementById(id);if(el){const v=parseFloat(el.textContent);if(!isNaN(v))animateCount(el,v,1000);}});}catch(e){}
 </script>
 </body>
 </html>
