@@ -620,7 +620,10 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
     <div class="tracker-card"><div class="tracker-big" id="t-avg">—</div><div class="tracker-label">SNITT ★</div><div class="tracker-sub">rating</div></div>
   </div>
 
-  <div class="section-title" style="margin-top:8px">TRENINGSDOM · ER DU PÅ RETT VEI?</div>
+  <div class="section-title" style="margin-top:8px">UKESRAPPORT</div>
+  <div class="coach-card" id="an-weekreport"></div>
+
+  <div class="section-title">TRENINGSDOM · ER DU PÅ RETT VEI?</div>
   <div class="an-card" id="an-verdicts"></div>
 
   <div class="section-title">MILEPÆLER</div>
@@ -682,6 +685,10 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
     <div class="modal-title" id="m-title"></div>
     <div class="modal-sub" id="m-sub"></div>
     <div id="m-body"></div>
+    <div id="m-move-section" style="display:none">
+      <div class="stars-label">FLYTT ØKT TIL DAG</div>
+      <div id="m-move-row" style="display:flex;gap:5px;margin-bottom:16px"></div>
+    </div>
     <div id="m-rating-section">
       <div class="stars-label">HVORDAN GÅR DET?</div>
       <div class="stars" id="stars">
@@ -689,6 +696,9 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
         <span class="star" onclick="rateStar(3)">★</span><span class="star" onclick="rateStar(4)">★</span>
         <span class="star" onclick="rateStar(5)">★</span>
       </div>
+      <div class="stars-label" style="margin-top:2px">OPPLEVD ANSTRENGELSE (RPE 1–10) <span class="learn-ic" onclick="openLearn('rpe')">i</span></div>
+      <div id="m-rpe-row" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px"></div>
+      <textarea id="m-note" placeholder="Notat — hvordan føltes økta? (valgfritt)" style="width:100%;background:var(--surface2);border:none;border-radius:12px;padding:12px;color:var(--text);font-size:13px;font-family:inherit;resize:none;min-height:52px;margin-bottom:8px"></textarea>
     </div>
     <button class="modal-btn primary" id="m-complete-btn" onclick="completeWorkout()">FULLFØR ØKT ✓</button>
     <button class="modal-btn secondary" id="m-undo-btn" style="display:none;color:var(--race)" onclick="uncompleteWorkout()">↩︎ Angre — marker som ikke gjort</button>
@@ -871,9 +881,26 @@ function mkPlan(){
 }
 const PLAN = mkPlan();
 
-// Session enumeration helpers (each day = 1 primary + optional .second session)
-function daySessions(w,d){const day=PLAN[w-1]&&PLAN[w-1][d];if(!day)return[];const out=[{s:day,key:`w${w}d${d}`,slot:day.second?'AM':'',w,d}];if(day.second)out.push({s:day.second,key:`w${w}d${d}_2`,slot:'PM',w,d});return out;}
-function weekSessions(w){const out=[];for(let d=0;d<7;d++)out.push(...daySessions(w,d));return out;}
+// Session enumeration helpers. Each session keeps a stable template key (w{w}d{td}[_2]).
+// x.td = template weekday, x.d = EFFECTIVE weekday (may differ if the user moved it).
+function effDayOf(key,td){return (S.assign&&S.assign[key]!=null)?S.assign[key]:td;}
+function weekSessions(w){
+  const out=[];
+  for(let td=0;td<7;td++){
+    const day=PLAN[w-1]&&PLAN[w-1][td];if(!day)continue;
+    const pk=`w${w}d${td}`;
+    out.push({s:day,key:pk,slot:day.second?'AM':'',w,td,d:effDayOf(pk,td)});
+    if(day.second){const sk=`w${w}d${td}_2`;out.push({s:day.second,key:sk,slot:'PM',w,td,d:effDayOf(sk,td)});}
+  }
+  return out;
+}
+function daySessions(w,d){return weekSessions(w).filter(x=>x.d===d);}
+function moveSession(key,newDay){
+  S.assign=S.assign||{};const m=String(key).match(/^w(\d+)d(\d+)/);if(!m)return;
+  const td=+m[2];
+  if(newDay===td)delete S.assign[key];else S.assign[key]=newDay;
+  save();closeModal();render();showPage('uke');
+}
 function sessFromKey(key){const m=String(key).match(/^w(\d+)d(\d+)(_2)?$/);if(!m)return null;const day=PLAN[m[1]-1]&&PLAN[m[1]-1][m[2]];if(!day)return null;return m[3]?day.second:day;}
 function allPlanned(){const out=[];for(let w=1;w<=12;w++)weekSessions(w).forEach(x=>out.push({...x,date:sessionDate(x.w,x.d)}));return out;}
 function nextSessionInfo(){const now0=new Date();now0.setHours(0,0,0,0);const pend=allPlanned().filter(x=>x.s.type!=='rest'&&!S.completed[x.key]);pend.sort((a,b)=>(a.date-b.date)||((a.slot==='PM'?1:0)-(b.slot==='PM'?1:0)));return pend.find(x=>x.date>=now0)||pend[0]||null;}
@@ -892,6 +919,7 @@ const SEASON_GOALS = PLAN.flat().reduce((a,d)=>{const add=s=>{a.swim+=s.km[0];a.
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let S = JSON.parse(localStorage.getItem('im_state')||'null') || {week:1,completed:{},form:null,pendingRating:0};
 if(!S.dismissed)S.dismissed={}; // sessions the user manually un-checked (so sync won't re-auto-complete them)
+if(!S.assign)S.assign={};       // key -> weekday index override (moved sessions)
 let activeKey = null;
 function save(){localStorage.setItem('im_state',JSON.stringify(S));}
 
@@ -1220,6 +1248,11 @@ function adaptedSession(session,adjust){
   }
   return{...session,adapted:false};
 }
+// Average RPE of the 3 most recent logged sessions (subjective load signal)
+function recentRPE(){
+  const rated=Object.values(S.completed).filter(v=>v&&v.rpe).map(v=>({d:new Date(v.date),rpe:v.rpe})).sort((a,b)=>b.d-a.d).slice(0,3);
+  return rated.length>=2?rated.reduce((s,x)=>s+x.rpe,0)/rated.length:null;
+}
 // The core: reads Garmin Training Readiness (a MORNING composite of sleep, HRV,
 // recovery time, acute load, stress, body battery) — NOT raw night Body Battery.
 function computeReadiness(){
@@ -1239,6 +1272,10 @@ function computeReadiness(){
   let overload=false;
   try{const f=computeForm();const tsb=f?f.tsb:null;
     if(tsb!=null){if(band==='high'&&tsb<-25){band='moderate';overload=true;}else if(band==='moderate'&&tsb<-32){band='low';overload=true;}}
+  }catch(e){}
+  // Injury guard: repeated high perceived effort (RPE) means you need more recovery
+  try{const rAvg=recentRPE();
+    if(rAvg!=null&&rAvg>=8){if(band==='high'){band='moderate';overload=true;}else if(band==='moderate'){band='low';overload=true;}}
   }catch(e){}
   const map={high:'push',moderate:'moderate',low:'reduce',verylow:'rest'};
   const titles={high:'🟢 Klar — kjør på',moderate:'🟡 Tren, men demp intensiteten',low:'🟠 Redusert i dag',verylow:'🔴 Hvil / veldig lett'};
@@ -1379,7 +1416,15 @@ function renderUke(){
   dl.innerHTML='';
   const nextKey=(nextSessionInfo()||{}).key;
   for(let i=0;i<7;i++){
-    daySessions(w,i).forEach(x=>{
+    let ds=daySessions(w,i);
+    const hasReal=ds.some(x=>x.s.type!=='rest');
+    if(hasReal)ds=ds.filter(x=>x.s.type!=='rest');
+    if(ds.length===0){
+      const el=document.createElement('div');el.className='day-card';
+      el.innerHTML=`<div class="day-icon rest">😴</div><div class="day-info"><div class="day-name">${days[i]}${isTodayWD(w,i)?' <span style="color:var(--accent)">· i dag</span>':''} · Hvile</div><div class="day-detail">Restitusjon</div></div><span class="day-tag rest">—</span>`;
+      dl.appendChild(el);continue;
+    }
+    ds.forEach(x=>{
       const rawS=x.s;const key=x.key;const isDone=!!S.completed[key];
       const auto=S.completed[key]&&S.completed[key].auto;
       const sess=(key===nextKey)?adaptedSession(rawS,R.adjust):{...rawS,adapted:false};
@@ -1391,17 +1436,18 @@ function renderUke(){
       const slotTag=x.slot?` <span style="font-size:9px;font-weight:800;color:var(--muted2)">${x.slot}</span>`:'';
       const todayTag=(x.slot!=='PM'&&isTodayWD(w,i))?' <span style="color:var(--accent)">· i dag</span>':'';
       const autoTag=auto?' <span style="color:var(--swim);font-size:11px">⌚</span>':'';
+      const movedTag=(x.d!==x.td)?' <span style="color:var(--bike);font-size:9px;font-weight:800">↔ flyttet</span>':'';
       el.innerHTML=`
         ${isDone?'<div class="done-check">✓</div>':''}
         ${sess.adapted&&!isDone?'<div class="adapt-dot"></div>':''}
         <div class="day-icon ${sess.type}">${typeEmoji(sess.type)}</div>
         <div class="day-info">
-          <div class="day-name">${days[i]}${slotTag}${todayTag} · ${sess.name}${autoTag}</div>
+          <div class="day-name">${days[i]}${slotTag}${todayTag} · ${sess.name}${autoTag}${movedTag}</div>
           <div class="day-detail">${sess.detail}${stars?' · '+stars:''}</div>
           ${isDone?'':zoneBadge}
         </div>
         <span class="day-tag ${sess.type}">${sess.dur}</span>`;
-      if(rawS.type!=='rest'){const wi=w,ii=i,which=(x.slot==='PM')?'_2':'';el.onclick=()=>openWorkout(wi,ii,which);el.classList.add('tappable');}
+      if(rawS.type!=='rest'){el.onclick=()=>openWorkout(x.w,x.td,x.slot==='PM'?'_2':'');el.classList.add('tappable');}
       dl.appendChild(el);
     });
   }
@@ -1464,9 +1510,11 @@ function renderHistory(){
     const el=document.createElement('div');el.className='hist-item';
     const dt=new Date(val.date);
     const auto=val.auto?'<span style="font-size:10px;color:var(--swim);font-weight:700"> ⌚ Garmin</span>':'';
+    const rpe=val.rpe?` · RPE ${val.rpe}`:'';
+    const note=val.note?`<div style="font-size:11px;color:var(--muted2);margin-top:3px;font-style:italic">"${val.note}"</div>`:'';
     el.innerHTML=`<div class="hist-dot" style="background:${typeColor(d.type)}"></div>
       <div class="hist-info"><div class="hist-title">${typeEmoji(d.type)} ${d.name}${auto}</div>
-      <div class="hist-meta">Uke ${m[1]} · ${dt.toLocaleDateString('no',{day:'numeric',month:'short'})}</div></div>
+      <div class="hist-meta">Uke ${m[1]} · ${dt.toLocaleDateString('no',{day:'numeric',month:'short'})}${rpe}</div>${note}</div>
       <div class="hist-stars">${val.star?'★'.repeat(val.star):''}</div>`;
     list.appendChild(el);
   });
@@ -1538,7 +1586,26 @@ function analyzeTraining(){
   const longSwim=[...GARMIN_ACTS.filter(a=>a.type==='swim')].sort((x,y)=>y.km-x.km)[0];
   return{curW,actual,planned,ptd,weekly,missed,compliance,doneTot,pastTot,easyPct,hardPct:easyPct!=null?100-easyPct:null,bestRun,longRun,longBike,longSwim};
 }
+function renderWeekReport(){
+  const el=document.getElementById('an-weekreport');if(!el)return;
+  const w=autoWeek();
+  const ss=weekSessions(w).filter(x=>x.s.type!=='rest');
+  const done=ss.filter(x=>['done','garmin'].includes(sessStatus(x))).length;
+  const plannedH=Math.round(weekSessions(w).reduce((s,x)=>s+parseDurMin(x.s.dur),0)/60*10)/10;
+  const d=deepAnalysis();const f=computeForm();const rAvg=recentRPE();
+  let focus='Hold planen og logg øktene dine.';
+  if(d.freqGaps.length){const g=d.freqGaps[0];focus=`Få inn ${({swim:'svømming',bike:'sykkel',run:'løping'})[g.k]} — den grenen henger etter denne uka.`;}
+  else if(d.vol.c==='bad')focus='Legg på litt volum for å nå ukas timer.';
+  else if(d.bal.c==='bad')focus=d.bal.msg;
+  else if(d.acwr.c==='bad')focus='Skaderisiko oppe — hold igjen litt de neste dagene.';
+  el.innerHTML=`
+    <div class="coach-eyebrow">📋 UKESRAPPORT · UKE ${w}</div>
+    <div class="coach-headline">${done}/${ss.length} økter · ${d.actualH}/${plannedH}t denne uka</div>
+    <div class="coach-sub">${f?`Form (TSB) ${f.tsb>0?'+':''}${f.tsb} · `:''}${rAvg?`Snitt RPE ${Math.round(rAvg*10)/10} · `:''}Gjennomføring ${d.compliance!=null?d.compliance+'%':'—'}</div>
+    <div class="coach-actions"><div class="coach-action"><span>🎯</span><span>${focus}</span></div></div>`;
+}
 function renderAnalysis(){
+  try{renderWeekReport();}catch(e){console.warn('weekreport',e);}
   try{renderVerdicts();}catch(e){console.warn('verdicts',e);}
   try{renderMilestones();}catch(e){console.warn('milestones',e);}
   const a=analyzeTraining();
@@ -1872,6 +1939,7 @@ const LEARN={
   recovery:['Restitusjonstid','Antall timer Garmin anslår før kroppen er helt uthvilt etter siste økt. Basert på belastning, intensitet, VO2max og alder. Har du mange timer igjen, bør dagens økt være roligere.'],
   trainingstatus:['Treningsstatus','Garmins vurdering av om treningen bygger form (Produktiv), vedlikeholder, eller om du overtrener/detrener. Bruker forholdet mellom akutt (7 dager) og kronisk (28 dager) belastning — samme idé som skaderisiko-målet.'],
   acuteload:['Akutt belastning','Summen av treningsbelastning siste 7 dager. Skal ligge i et fornuftig forhold til den kroniske (28-dagers) — for stort hopp = skaderisiko, for lite = du mister form.'],
+  rpe:['RPE — opplevd anstrengelse','Din egen vurdering av hvor hardt økta føltes, 1 (veldig lett) til 10 (maksimalt). Kombinert med Garmin-tallene fanger RPE det klokka ikke ser: dårlig dag, stress, søvn. Flere harde RPE-økter på rad = appen demper neste økt for å beskytte deg.'],
 };
 function learnIc(key){return LEARN[key]?`<span class="learn-ic" onclick="openLearn('${key}');event.stopPropagation();">i</span>`:'';}
 function openLearn(key){
@@ -1942,6 +2010,17 @@ function openWorkout(week,i,which){
   if(d.type==='bike'){tips.push('Spis og drikk hvert 20–30 min på sykkel.');}
   if(tips.length)bodyHtml+=`<div class="workout-block"><h4>🎯 TEKNIKKFOKUS</h4><p>${tips.join('<br>')}</p></div>`;
   document.getElementById('m-body').innerHTML=bodyHtml;
+  // Move-to-day picker (uses the stable template key)
+  const days3=['M','T','O','T','F','L','S'];
+  const curDay=effDayOf(key,i);
+  const moveRow=document.getElementById('m-move-row');
+  if(moveRow)moveRow.innerHTML=days3.map((dn,di)=>`<div class="form-btn${di===curDay?' active':''}" style="flex:1;min-width:0;padding:8px 2px" onclick="moveSession('${key}',${di})">${dn}</div>`).join('');
+  document.getElementById('m-move-section').style.display=raw.type==='rest'?'none':'block';
+  // RPE + note
+  S.pendingRpe=doneRec&&doneRec.rpe?doneRec.rpe:0;
+  const rpeRow=document.getElementById('m-rpe-row');
+  if(rpeRow)rpeRow.innerHTML=[1,2,3,4,5,6,7,8,9,10].map(n=>`<div class="form-btn rpe-btn${n===S.pendingRpe?' active':''}" style="flex:1;min-width:0;padding:8px 0;font-size:12px" onclick="setRpe(${n})">${n}</div>`).join('');
+  const noteEl=document.getElementById('m-note');if(noteEl)noteEl.value=(doneRec&&doneRec.note)||'';
   // Completed-state footer: allow re-rating and undo
   const compBtn=document.getElementById('m-complete-btn');
   const undoBtn=document.getElementById('m-undo-btn');
@@ -1960,10 +2039,11 @@ function openWorkout(week,i,which){
 function openTodayWorkout(){
   const n=nextSessionInfo();
   if(!n){showPage('uke');return;}
-  openWorkout(n.w,n.d,n.slot==='PM'?'_2':'');
+  openWorkout(n.w,n.td,n.slot==='PM'?'_2':'');
 }
-function rateStar(n){S.pendingRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<n));}
-function completeWorkout(){if(!activeKey)return;const prev=S.completed[activeKey]||{};S.completed[activeKey]={...prev,star:S.pendingRating||prev.star||null,date:prev.date||new Date().toISOString()};if(S.dismissed)delete S.dismissed[activeKey];save();closeModal();render();}
+function rateStar(n){S.pendingRating=n;document.querySelectorAll('#stars .star').forEach((s,i)=>s.classList.toggle('active',i<n));}
+function setRpe(n){S.pendingRpe=n;document.querySelectorAll('#m-rpe-row .rpe-btn').forEach((b,i)=>b.classList.toggle('active',i+1===n));}
+function completeWorkout(){if(!activeKey)return;const prev=S.completed[activeKey]||{};const noteEl=document.getElementById('m-note');const note=noteEl?noteEl.value.trim():(prev.note||'');S.completed[activeKey]={...prev,star:S.pendingRating||prev.star||null,rpe:S.pendingRpe||prev.rpe||null,note:note,date:prev.date||new Date().toISOString()};if(S.dismissed)delete S.dismissed[activeKey];save();closeModal();render();}
 function uncompleteWorkout(){if(!activeKey)return;delete S.completed[activeKey];S.dismissed=S.dismissed||{};S.dismissed[activeKey]=true;save();closeModal();render();}
 function closeModal(){document.getElementById('modal').classList.remove('open');activeKey=null;}
 function closeModalBg(e){if(e.target===document.getElementById('modal'))closeModal();}
