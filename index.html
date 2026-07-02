@@ -574,6 +574,8 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
     </div>
     <div class="kropp-info"><div class="kropp-status-title" id="bb-status">Laster...</div><div class="kropp-status-sub" id="bb-rec"></div></div>
   </div>
+  <div class="section-title">TRAINING READINESS <span class="learn-ic" onclick="openLearn('readiness')">i</span></div>
+  <div class="an-card" id="kropp-readiness"></div>
   <div class="kropp-grid">
     <div class="kropp-card"><div class="kropp-card-label">HRV STATUS</div><div class="kropp-card-val" id="hrv-val">—</div><div id="hrv-badge"></div><div class="kropp-card-sub" id="hrv-sub"></div></div>
     <div class="kropp-card"><div class="kropp-card-label">SØVNSCORE</div><div class="kropp-card-val" id="sleep-score">—</div><div class="kropp-card-sub" id="sleep-hours"></div><div id="sleep-badge"></div></div>
@@ -1117,22 +1119,58 @@ function computeAdaptive(week){
   return{compliance:Math.round(compliance*100),level,matched,total:nonRest.length,fatigued,fresh,lowEnergy,cadenceTip,bb,hrv,tsb};
 }
 
-function adaptedSession(session,level){
-  if(level>=0||session.type==='rest')return{...session,adapted:false};
-  if(level===-1){
-    // Reduce volume by ~25%
+// ── READINESS BRAIN (Garmin Training Readiness-driven) ──────────────────────────
+function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+function isTodayWD(w,d){return sameDay(sessionDate(w,d),new Date());}
+// Adjustment applied ONLY to today's session, based on today's readiness band.
+function adaptedSession(session,adjust){
+  if(!adjust||adjust==='push'||adjust==='keep'||session.type==='rest')return{...session,adapted:false};
+  if(adjust==='moderate'){
+    const det=(session.detail||'').toLowerCase();
+    if(det.includes('intervall')||det.includes('tempo')||det.includes('hard')||det.includes('drag')||det.includes('×')||det.includes('terskel'))
+      return{...session,adapted:true,detail:session.detail+' → hold sone 2 i dag'};
+    return{...session,adapted:false};
+  }
+  if(adjust==='reduce'){
     const adj={...session,adapted:true};
-    if(session.detail.match(/\d+ km/)){adj.detail=session.detail.replace(/(\d+)\s*km/,(m,n)=>Math.round(n*0.75)+' km (redusert)');}
-    else if(session.detail.match(/\d+ min/)){adj.detail=session.detail.replace(/(\d+)\s*min/,(m,n)=>Math.round(n*0.75)+' min (redusert)');}
+    if(session.detail.match(/\d+\s*km/))adj.detail=session.detail.replace(/(\d+)\s*km/,(m,n)=>Math.round(n*0.75)+' km (redusert)');
+    else if(session.detail.match(/\d+\s*min/))adj.detail=session.detail.replace(/(\d+)\s*min/,(m,n)=>Math.round(n*0.75)+' min (redusert)');
+    else adj.detail=session.detail+' (kortet ned)';
     return adj;
   }
-  if(level===-2){
-    // Convert hard sessions to rest or easy
-    if(session.type==='run'||session.type==='bike'){return{...session,detail:'Lett 20 min · Restitusjon',adapted:true,dur:'20 min'};}
-    if(session.type==='brick'){return{...session,detail:'Utsatt — kroppen trenger hvile',adapted:true,type:'rest',dur:'—'};}
-    return session;
+  if(adjust==='rest'){
+    if(session.type==='brick')return{...session,type:'rest',adapted:true,detail:'Utsatt til bedre dag — kroppen trenger hvile',dur:'—'};
+    return{...session,adapted:true,detail:'Lett 20–30 min rolig · restitusjon',dur:'25 min'};
   }
-  return session; // level 1: keep as is, show extra tip
+  return{...session,adapted:false};
+}
+// The core: reads Garmin Training Readiness (a MORNING composite of sleep, HRV,
+// recovery time, acute load, stress, body battery) — NOT raw night Body Battery.
+function computeReadiness(){
+  const tr=BODY_DATA&&BODY_DATA.trainingReadiness;
+  const score=(tr&&typeof tr.score==='number')?tr.score:null;
+  const hrv=BODY_DATA&&BODY_DATA.hrv&&BODY_DATA.hrv.status;
+  const rec=tr&&tr.recoveryTime;
+  const night=new Date().getHours()<6;
+  if(score==null){
+    return{have:false,band:'unknown',score:null,adjust:'keep',
+      title:'Synk for dagens justering',
+      msg:'Trykk «Oppdater» på Kropp om morgenen, så tilpasses dagens økt til Garmin Training Readiness — ikke Body Battery midt på natta.'};
+  }
+  let band=score>=65?'high':score>=45?'moderate':score>=30?'low':'verylow';
+  if(hrv&&hrv.toLowerCase().includes('poor')&&band==='high')band='moderate';
+  const map={high:'push',moderate:'moderate',low:'reduce',verylow:'rest'};
+  const titles={high:'🟢 Klar — kjør på',moderate:'🟡 Tren, men demp intensiteten',low:'🟠 Redusert i dag',verylow:'🔴 Hvil / veldig lett'};
+  const recTxt=rec?` Restitusjonstid igjen: ~${rec}t.`:'';
+  const msgs={
+    high:`Training Readiness ${score} — grønt lys. Kjør økta som planlagt med full innsats på kvalitetsdelene.`,
+    moderate:`Training Readiness ${score} — tren som planlagt, men hold hardøktene i sjakk (sone 2 fremfor sone 4).${recTxt}`,
+    low:`Training Readiness ${score} — kroppen er ikke helt klar. Volumet er kuttet ~20%. Rolig fremfor hardt.${recTxt}`,
+    verylow:`Training Readiness ${score} — prioriter restitusjon i dag. Kort rolig økt eller hvil.${recTxt}`,
+  };
+  let msg=msgs[band];
+  if(night)msg='🌙 Dette er kveldstall — Body Battery lades opp av natta. Sjekk igjen når du våkner, så justeres økta på morgen-readiness. '+msg;
+  return{have:true,band,score,recoveryTime:rec,adjust:map[band],title:titles[band],msg,night,feedback:tr.feedback};
 }
 
 // ── RENDER HOME ───────────────────────────────────────────────────────────────
@@ -1169,8 +1207,8 @@ function render(){
   const todayWeek=daysSinceStart>=0?Math.floor(daysSinceStart/7)+1:1;
   const todaySession=(todayWeek>=1&&todayWeek<=12&&todayDayIdx>=0)?PLAN[todayWeek-1]?.[todayDayIdx]:null;
   const hero=document.getElementById('today-hero');
-  const adaptive=computeAdaptive(todayWeek||w);
-  const session=todaySession?adaptedSession(todaySession,adaptive.level):null;
+  const R=computeReadiness();
+  const session=todaySession?adaptedSession(todaySession,R.adjust):null;
   if(session&&session.type!=='rest'){
     const rgb=typeRGB(session.type);
     hero.style.background=`rgba(${rgb},0.08)`;
@@ -1239,39 +1277,21 @@ function renderUke(){
   document.getElementById('uke-header-title').textContent=`Uke ${w} av 12`;
   try{renderProfile();}catch(e){console.warn('profile',e);}
   const adapt=computeAdaptive(w);
+  const R=computeReadiness();
 
-  // Adaptive banner
-  let bannerBg,bannerBorder,bannerTitle,bannerText,bannerTag;
-  if(adapt.level===-2){
-    bannerBg='rgba(255,55,95,0.08)';bannerBorder='rgba(255,55,95,0.25)';
-    bannerTitle='🔴 Hvil og restituer';
-    bannerText=`Body Battery på ${adapt.bb||'?'} og signaler om utmattelse. Planen er justert ned til minimumsnivå. Recovery er trening.`;
-    bannerTag='STERKT REDUSERT';
-  } else if(adapt.level===-1){
-    bannerBg='rgba(255,106,0,0.08)';bannerBorder='rgba(255,106,0,0.25)';
-    bannerTitle='⚠️ Redusert volum';
-    bannerText=adapt.lowEnergy?`Body Battery (${adapt.bb||'?'}) indikerer lav energi. Volum justert ned 20–25%. Fullfør om du kan, stopp om du må.`:`Ferdighetsnivå og signaler tilsier litt lettere uke. Jobb med teknikk fremfor tempo.`;
-    bannerTag='LETT JUSTERT';
-  } else if(adapt.level===1){
-    bannerBg='rgba(0,230,118,0.08)';bannerBorder='rgba(0,230,118,0.25)';
-    bannerTitle='🔥 Kjør på — du er klar!';
-    bannerText=`Body Battery høy (${adapt.bb||'?'}) og HRV balansert. Push på alle planlagte intensitetsøkter. Du er i god form.`;
-    bannerTag='FULL INTENSITET';
-  } else {
-    bannerBg='rgba(0,212,255,0.05)';bannerBorder='rgba(0,212,255,0.15)';
-    bannerTitle='💪 Hold planen';
-    bannerText=adapt.total>0?`Fulgte ${adapt.matched} av ${adapt.total} planlagte økter forrige uke. Fortsett som planlagt.`:'Følg treningsplanen som den er. Lytt til kroppen underveis.';
-    bannerTag='PÅ PLAN';
-  }
+  // Readiness banner — reflects TODAY's Garmin Training Readiness (only today adapts)
+  const bandBg={high:'rgba(37,211,102,0.08)',moderate:'rgba(255,122,26,0.08)',low:'rgba(255,122,26,0.10)',verylow:'rgba(255,77,109,0.09)',unknown:'rgba(34,197,255,0.05)'};
+  const bandBd={high:'rgba(37,211,102,0.25)',moderate:'rgba(255,122,26,0.25)',low:'rgba(255,122,26,0.3)',verylow:'rgba(255,77,109,0.3)',unknown:'rgba(34,197,255,0.15)'};
+  let bannerText=R.msg;
   if(adapt.cadenceTip)bannerText+=' '+adapt.cadenceTip+'.';
-
+  const tag=R.have?`READINESS ${R.score}`:'SYNK GARMIN';
   document.getElementById('adapt-banner').innerHTML=`
-    <div class="adapt-banner" style="background:${bannerBg};border:1px solid ${bannerBorder}">
-      <div class="adapt-icon">${adapt.level===-2?'😴':adapt.level===-1?'⚠️':adapt.level===1?'🔥':'💪'}</div>
+    <div class="adapt-banner" style="background:${bandBg[R.band]};border:1px solid ${bandBd[R.band]}">
+      <div class="adapt-icon">${R.band==='high'?'🟢':R.band==='moderate'?'🟡':R.band==='low'?'🟠':R.band==='verylow'?'🔴':'📲'}</div>
       <div>
-        <div class="adapt-title">${bannerTitle}</div>
+        <div class="adapt-title">${R.title} <span class="learn-ic" onclick="openLearn('readiness')">i</span></div>
         <div class="adapt-text">${bannerText}</div>
-        <div class="adapt-tag">${bannerTag}</div>
+        <div class="adapt-tag">${tag} · GJELDER I DAG</div>
       </div>
     </div>`;
 
@@ -1281,7 +1301,7 @@ function renderUke(){
   PLAN[w-1].forEach((rawDay,i)=>{
     const key=`w${w}d${i}`;
     const isDone=!!S.completed[key];
-    const day=adaptedSession(rawDay,adapt.level);
+    const day=isTodayWD(w,i)?adaptedSession(rawDay,R.adjust):{...rawDay,adapted:false};
     const el=document.createElement('div');
     el.className='day-card'+(isDone?' done':'')+(day.adapted?' adapted':'');
     const stars=S.completed[key]?.star?'★'.repeat(S.completed[key].star):'';
@@ -1292,7 +1312,7 @@ function renderUke(){
       ${day.adapted&&!isDone?'<div class="adapt-dot"></div>':''}
       <div class="day-icon ${day.type}">${typeEmoji(day.type)}</div>
       <div class="day-info">
-        <div class="day-name">${days[i]} · ${day.name}</div>
+        <div class="day-name">${days[i]}${isTodayWD(w,i)?' <span style="color:var(--accent)">· i dag</span>':''} · ${day.name}</div>
         <div class="day-detail">${day.detail}${stars?' · '+stars:''}</div>
         ${isDone?'':zoneBadge}
       </div>
@@ -1714,6 +1734,11 @@ const LEARN={
   ef:['Aerob effektivitet','Hvor langt/raskt du kommer per hjerteslag. Når du løper raskere på samme puls over tid, stiger formen. Den beste indikatoren på at utholdenhetstreningen virker.'],
   fuel:['Fueling','Kroppen lagrer ~90 min med karbo. Over lengre økter må du fylle på: 60–90 g karbo/time og 500–750 ml væske/time. Mageproblemer er den vanligste grunnen til at folk sprekker i et Ironman — tren magen også.'],
   balance:['Grenbalanse','Fordelingen av treningstid mellom svøm, sykkel og løp. Sykkelen tar mest tid i et Ironman (~50%), så den bør få mest treningstid. Sterke løpere undervurderer ofte sykkel og svøm.'],
+  readiness:['Training Readiness','Garmins morgen-score (0–100) som kombinerer SEKS ting: søvn, HRV-status, restitusjonstid, akutt belastning, stresshistorikk og Body Battery. Over 65 = klar for hardt. 45–64 = tren, men demp. Under 45 = ta det rolig. Dette er tallet appen bruker for å justere DAGENS økt — ikke rå Body Battery, som naturlig er lav om kvelden.'],
+  bodybattery:['Body Battery','Din «energitank» 0–100. Lades av søvn og hvile, tømmes av aktivitet og stress. Lav om kvelden er helt normalt — den fylles opp om natta. Derfor bruker appen Training Readiness (som allerede vet dette) til å justere trening, ikke Body Battery alene.'],
+  recovery:['Restitusjonstid','Antall timer Garmin anslår før kroppen er helt uthvilt etter siste økt. Basert på belastning, intensitet, VO2max og alder. Har du mange timer igjen, bør dagens økt være roligere.'],
+  trainingstatus:['Treningsstatus','Garmins vurdering av om treningen bygger form (Produktiv), vedlikeholder, eller om du overtrener/detrener. Bruker forholdet mellom akutt (7 dager) og kronisk (28 dager) belastning — samme idé som skaderisiko-målet.'],
+  acuteload:['Akutt belastning','Summen av treningsbelastning siste 7 dager. Skal ligge i et fornuftig forhold til den kroniske (28-dagers) — for stort hopp = skaderisiko, for lite = du mister form.'],
 };
 function learnIc(key){return LEARN[key]?`<span class="learn-ic" onclick="openLearn('${key}');event.stopPropagation();">i</span>`:'';}
 function openLearn(key){
@@ -1732,8 +1757,7 @@ function animateCount(el,to,dur){
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function openWorkout(week,i){
   const raw=PLAN[week-1][i];
-  const adapt=computeAdaptive(week);
-  const d=adaptedSession(raw,adapt.level);
+  const d=isTodayWD(week,i)?adaptedSession(raw,computeReadiness().adjust):{...raw,adapted:false};
   activeKey=`w${week}d${i}`;S.pendingRating=0;
   document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
   document.getElementById('m-title').textContent=`${typeEmoji(d.type)} ${d.name}`;
@@ -1951,6 +1975,19 @@ function renderBodyData(){
   const rValEl=document.getElementById('r-val');if(rValEl){rValEl.textContent=rVal||'—';if(rVal)rValEl.style.color=bbColor(rVal);}
   const rTitle=document.getElementById('r-title');if(rTitle){const[st]=bbStatus(rVal);rTitle.textContent=st;}
   const rSub=document.getElementById('r-sub');if(rSub)rSub.textContent='BB: '+(bb||'—')+' · '+(hrv.status?hrvLabel(hrv.status):'HRV ukjent');
+  // Training Readiness detail card (Fenix 8 Pro)
+  const krEl=document.getElementById('kropp-readiness');
+  if(krEl){
+    const tr=data.trainingReadiness||{};const ts=data.trainingStatus||{};
+    const R=computeReadiness();
+    const rows=[];
+    rows.push(metricRow('Readiness-score','readiness',`<span style="color:${bbColor(tr.score)}">${tr.score??'—'}</span>`,R.have?R.title.replace(/^\S+\s/,''):'Ingen data'));
+    if(tr.recoveryTime!=null)rows.push(metricRow('Restitusjonstid','recovery',`~${tr.recoveryTime}t`,'Til helt uthvilt etter siste økt'));
+    if(ts.status)rows.push(metricRow('Treningsstatus','trainingstatus',ts.status,'Garmins vurdering av formutvikling'));
+    if(ts.loadRatio!=null){const lr=typeof ts.loadRatio==='number'?(ts.loadRatio>3?Math.round(ts.loadRatio)+'%':ts.loadRatio.toFixed(2)):ts.loadRatio;rows.push(metricRow('Belastningsforhold','acuteload',lr,'Akutt vs. kronisk (7d/28d)'));}
+    if(tr.acuteLoad!=null)rows.push(metricRow('Akutt belastning','acuteload',Math.round(tr.acuteLoad),'Sum belastning siste 7 dager'));
+    krEl.innerHTML=rows.join('')+`<div style="font-size:12px;color:var(--muted2);margin-top:10px;line-height:1.5">${R.msg}</div>`;
+  }
   const pills=document.getElementById('r-pills');
   if(pills)pills.innerHTML=[
     sl.score?`<div class="readiness-pill"><span class="readiness-pill-val">😴 ${sl.score}</span><span class="readiness-pill-label">SØVN</span></div>`:'',

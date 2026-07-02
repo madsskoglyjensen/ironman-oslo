@@ -180,10 +180,47 @@ def get_body_data(api):
             result['trainingReadiness'] = {
                 'score': t.get('score'),
                 'level': t.get('level'),
+                'feedback': t.get('feedbackLong') or t.get('feedbackShort'),
                 'recoveryTime': t.get('recoveryTime'),
+                'acuteLoad': t.get('acuteLoad'),
+                'sleepScore': t.get('sleepScore'),
+                'hrvFactor': t.get('hrvFactorPercent'),
+                'sleepFactor': t.get('sleepScoreFactorPercent'),
+                'recoveryFactor': t.get('recoveryTimeFactorPercent'),
+                'loadFactor': t.get('acwrFactorPercent'),
+                'stressFactor': t.get('stressHistoryFactorPercent'),
             }
     except Exception as e:
         result['trainingReadiness'] = {'error': str(e)}
+
+    # Training Status / acute load / load ratio (Fenix 8 Pro)
+    try:
+        ts = api.get_training_status(today)
+        rec = ts.get('mostRecentTrainingStatus', {}) if isinstance(ts, dict) else {}
+        latest = rec.get('latestTrainingStatusData', {}) or {}
+        tsd = next(iter(latest.values()), {}) if latest else {}
+        atl = tsd.get('acuteTrainingLoadDTO', {}) or {}
+        result['trainingStatus'] = {
+            'status': tsd.get('trainingStatusFeedbackPhrase') or tsd.get('trainingStatus'),
+            'loadRatio': atl.get('dailyAcuteChronicWorkloadRatio') or atl.get('acwrPercent'),
+            'loadRatioStatus': atl.get('acwrStatus'),
+            'acuteLoad': atl.get('dailyTrainingLoadAcute'),
+            'chronicLoad': atl.get('dailyTrainingLoadChronic'),
+        }
+    except Exception as e:
+        result['trainingStatus'] = {'error': str(e)}
+
+    # Endurance & Hill score (nice-to-have Fenix metrics; skip silently if unsupported)
+    try:
+        es = api.get_endurance_score(today)
+        result['enduranceScore'] = {'value': (es or {}).get('overallScore')} if isinstance(es, dict) else {'value': None}
+    except Exception as e:
+        result['enduranceScore'] = {'error': str(e)}
+    try:
+        hs = api.get_hill_score(today)
+        result['hillScore'] = {'value': (hs or {}).get('overallScore')} if isinstance(hs, dict) else {'value': None}
+    except Exception as e:
+        result['hillScore'] = {'error': str(e)}
 
     try:
         rhr = api.get_rhr_day(today)
