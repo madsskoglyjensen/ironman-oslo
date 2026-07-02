@@ -587,6 +587,8 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
     <div class="sleep-bar" id="sleep-bar"></div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px" id="sleep-legend"></div>
   </div>
+  <div class="section-title">UTVIKLING OVER TID <span class="learn-ic" onclick="openLearn('trends')">i</span></div>
+  <div class="an-card" id="body-trends"><div class="empty" style="padding:16px">Trender bygges opp når du synker Garmin-data.</div></div>
   <div class="section-title">FORM (TRENINGSBELASTNING) <span class="learn-ic" onclick="openLearn('tsb')">i</span></div>
   <div class="form-curve-card" id="form-curve">
     <div class="empty" style="padding:20px">Henter treningsbelastning...</div>
@@ -654,7 +656,14 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
   <div id="week-summary"></div>
   <div class="section-title" style="margin-top:16px">HISTORIKK</div>
   <div id="history-list"><div class="empty">Ingen økter logget ennå.</div></div>
-  <div style="text-align:center;padding:22px 20px 30px">
+  <div class="section-title" style="margin-top:16px">BACKUP & DATA</div>
+  <div style="display:flex;gap:8px;margin:0 20px 10px">
+    <button class="modal-btn secondary" style="flex:1;margin:0" onclick="exportBackup()">⬇︎ Last ned backup</button>
+    <button class="modal-btn secondary" style="flex:1;margin:0" onclick="document.getElementById('import-file').click()">↥ Gjenopprett</button>
+    <input type="file" id="import-file" accept="application/json,.json" style="display:none" onchange="importBackup(this)">
+  </div>
+  <div style="font-size:11px;color:var(--muted2);margin:0 20px 10px;line-height:1.5">Last ned en fil og lagre den i Filer/iCloud på mobilen innimellom. Garmin-øktene kan alltid hentes tilbake ved å synke på nytt — backupen sikrer loggen din (avkryssinger, RPE, notater, flyttinger).</div>
+  <div style="text-align:center;padding:14px 20px 30px">
     <span class="tappable" onclick="repairData()" style="font-size:11px;color:var(--muted2);text-decoration:underline">Reparer app-data</span>
     <span style="color:var(--muted)"> · </span>
     <span class="tappable" onclick="resetData()" style="font-size:11px;color:var(--race);text-decoration:underline">Nullstill alt</span>
@@ -925,6 +934,10 @@ const SEASON_GOALS = PLAN.flat().reduce((a,d)=>{const add=s=>{a.swim+=s.km[0];a.
 function safeParse(str,fallback){try{const v=JSON.parse(str);return v==null?fallback:v;}catch(e){return fallback;}}
 function loadState(){
   let s=safeParse(localStorage.getItem('im_state'),null);
+  if(!s||typeof s!=='object'||Array.isArray(s)){          // primary bad → try shadow backup
+    const sh=safeParse(localStorage.getItem('im_state_shadow'),null);
+    s=(sh&&sh.state)?sh.state:{};
+  }
   if(!s||typeof s!=='object'||Array.isArray(s))s={};
   s.v=2;
   if(typeof s.week!=='number'||s.week<1||s.week>12)s.week=1;
@@ -936,7 +949,37 @@ function loadState(){
 }
 let S = loadState();
 let activeKey = null;
-function save(){try{localStorage.setItem('im_state',JSON.stringify(S));}catch(e){console.warn('Kunne ikke lagre (lagringsplass?)',e);}}
+function save(){try{const str=JSON.stringify(S);localStorage.setItem('im_state',str);localStorage.setItem('im_state_shadow',JSON.stringify({at:Date.now(),state:S}));}catch(e){console.warn('Kunne ikke lagre (lagringsplass?)',e);}}
+// ── BACKUP: export to a file you can save on your phone, and restore from one ────
+function exportBackup(){
+  try{
+    const payload={app:'ironman-oslo',v:2,exportedAt:new Date().toISOString(),state:S,bodyHistory:safeParse(localStorage.getItem('im_body_history'),{}),garminActs:GARMIN_ACTS};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');
+    a.href=url;a.download='ironman-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a);a.click();setTimeout(()=>{try{URL.revokeObjectURL(url);a.remove();}catch(_){}},600);
+  }catch(e){console.warn('export',e);}
+}
+function importBackup(input){
+  const f=input&&input.files&&input.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    let ok=false;
+    try{const p=JSON.parse(rd.result);
+      if(p&&p.state&&typeof p.state==='object'){
+        if(typeof confirm==='function'&&!confirm('Gjenopprett fra backup? Dette erstatter nåværende fremgang.')){input.value='';return;}
+        S=Object.assign({week:1,completed:{},dismissed:{},assign:{},pendingRating:0},p.state);
+        if(p.bodyHistory)try{localStorage.setItem('im_body_history',JSON.stringify(p.bodyHistory));}catch(_){}
+        save();sanitizeState();render();renderBodyData();ok=true;
+      }
+    }catch(e){}
+    input.value='';
+    const c=document.getElementById('garmin-modal-content');
+    if(c){c.innerHTML=ok?`<div style="font-size:19px;font-weight:900">✅ Gjenopprettet</div><div style="font-size:14px;color:var(--muted2);margin-top:8px">Backupen er lastet inn. Alt er tilbake.</div>`:`<div style="font-size:18px;font-weight:900;color:var(--race)">Kunne ikke lese backup</div><div style="font-size:14px;color:var(--muted2);margin-top:8px">Filen ser ikke ut som en gyldig Ironman-backup.</div>`;
+      document.getElementById('garmin-modal').classList.add('open');}
+  };
+  rd.readAsText(f);
+}
 // Remove entries that no longer point to a real session, clamp move-days to 0–6
 function sanitizeState(){
   let changed=false;
@@ -1970,6 +2013,8 @@ const LEARN={
   trainingstatus:['Treningsstatus','Garmins vurdering av om treningen bygger form (Produktiv), vedlikeholder, eller om du overtrener/detrener. Bruker forholdet mellom akutt (7 dager) og kronisk (28 dager) belastning — samme idé som skaderisiko-målet.'],
   acuteload:['Akutt belastning','Summen av treningsbelastning siste 7 dager. Skal ligge i et fornuftig forhold til den kroniske (28-dagers) — for stort hopp = skaderisiko, for lite = du mister form.'],
   rpe:['RPE — opplevd anstrengelse','Din egen vurdering av hvor hardt økta føltes, 1 (veldig lett) til 10 (maksimalt). Kombinert med Garmin-tallene fanger RPE det klokka ikke ser: dårlig dag, stress, søvn. Flere harde RPE-økter på rad = appen demper neste økt for å beskytte deg.'],
+  trends:['Utvikling over tid','Hver gang du synker lagres et øyeblikksbilde av søvn, readiness, HRV, hvilepuls og VO2max. Over uker ser du trenden: stiger VO2max og HRV mens hvilepulsen synker, bygger du form riktig. Faller HRV og readiness over tid, er det tidlig varsel om at du tar for hardt i.'],
+  power:['Effekt (watt)','Watt måler faktisk kraft — mer presist enn puls fordi det ikke påvirkes av søvn, varme eller stress. På sykkel styrer du etter watt; Normalized Power (NP) vekter for variasjon og viser reell belastning. På løp gir løpeeffekt samme fordel. Perfekt for jevn pacing på lange IM-økter.'],
 };
 function learnIc(key){return LEARN[key]?`<span class="learn-ic" onclick="openLearn('${key}');event.stopPropagation();">i</span>`:'';}
 function openLearn(key){
@@ -2171,7 +2216,11 @@ function openGarminDetail(idx){
   if(act.elev)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.elev}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">↑ m</div></div>`;
   if(act.cadence)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:${act.cadence>=172?'var(--run)':'var(--bike)'}">${act.cadence}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">KADENS spm</div></div>`;
   if(act.kcal)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.kcal}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">KCAL</div></div>`;
-  if(act.runPower)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--brick)">${act.runPower}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">WATT</div></div>`;
+  const _pw=act.power||act.runPower;
+  if(_pw)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--brick)">${_pw}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">SNITT WATT</div></div>`;
+  if(act.normPower)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--brick)">${act.normPower}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">NP (NORM) ⚡</div></div>`;
+  if(act.maxPower)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.maxPower}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">MAKS WATT</div></div>`;
+  if(act.bikeCadence)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.bikeCadence}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">RPM</div></div>`;
   if(act.swolf)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:${act.swolf<35?'var(--run)':'var(--bike)'}">${act.swolf}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">SWOLF</div></div>`;
   if(act.gct)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.gct}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">GCT ms</div></div>`;
   if(act.vertOsc)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900">${act.vertOsc}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">VERT.OSC cm</div></div>`;
@@ -2230,7 +2279,40 @@ async function syncGarmin(){
 }
 
 // ── KROPP ────────────────────────────────────────────────────────────────────
+// Store one daily snapshot of recovery metrics so we can chart development over time
+function recordBodySnapshot(){
+  if(!BODY_DATA)return;
+  try{const hist=safeParse(localStorage.getItem('im_body_history'),{})||{};
+    const day=(bodySyncTime?new Date(bodySyncTime):new Date()).toISOString().slice(0,10);
+    const g=(o,k)=>o&&o[k]!=null?o[k]:null;
+    hist[day]={tr:g(BODY_DATA.trainingReadiness,'score'),sleep:g(BODY_DATA.sleep,'score'),hrv:g(BODY_DATA.hrv,'lastNight'),rhr:g(BODY_DATA.rhr,'value'),vo2:g(BODY_DATA.maxMetrics,'vo2max'),stress:g(BODY_DATA.stress,'avg')};
+    localStorage.setItem('im_body_history',JSON.stringify(hist));
+  }catch(e){}
+}
+function renderBodyTrends(){
+  const el=document.getElementById('body-trends');if(!el)return;
+  const hist=safeParse(localStorage.getItem('im_body_history'),{})||{};
+  const dates=Object.keys(hist).sort();
+  if(dates.length<2){el.innerHTML=`<div class="empty" style="padding:16px">Trender bygges opp etter hvert som du synker Garmin — kom tilbake etter noen dager.${dates.length?' (1 dag lagret så langt)':''}</div>`;return;}
+  const metrics=[{k:'tr',label:'Training Readiness',color:'var(--run)',u:''},{k:'sleep',label:'Søvnscore',color:'var(--swim)',u:''},{k:'hrv',label:'HRV',color:'var(--brick)',u:' ms'},{k:'rhr',label:'Hvilepuls',color:'var(--race)',u:' bpm'},{k:'vo2',label:'VO2max',color:'var(--bike)',u:''}];
+  let html='';
+  metrics.forEach(mm=>{
+    const pts=dates.map(d=>hist[d][mm.k]).filter(v=>v!=null).map(Number);
+    if(pts.length<2)return;
+    const min=Math.min(...pts),max=Math.max(...pts),rng=(max-min)||1;
+    const W=260,H=32;const xs=i=>i*W/(pts.length-1);const ys=v=>H-3-((v-min)/rng)*(H-6);
+    const line=`<polyline fill="none" stroke="${mm.color}" stroke-width="2" stroke-linejoin="round" points="${pts.map((v,i)=>xs(i)+','+ys(v)).join(' ')}"/>`;
+    const last=pts[pts.length-1],chg=Math.round((last-pts[0])*10)/10;
+    const arrow=chg>0?'↑':chg<0?'↓':'→';
+    html+=`<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--surface2)">
+      <div style="width:104px;flex-shrink:0"><div style="font-size:10px;color:var(--muted2);font-weight:700">${mm.label}</div><div style="font-size:15px;font-weight:800;color:${mm.color}">${Math.round(last*10)/10}${mm.u} <span style="font-size:10px;color:var(--muted2)">${arrow}${Math.abs(chg)||''}</span></div></div>
+      <svg width="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="flex:1">${line}</svg>
+    </div>`;
+  });
+  el.innerHTML=(html||'<div class="empty" style="padding:16px">Ikke nok data ennå.</div>')+`<div style="font-size:11px;color:var(--muted2);margin-top:8px">Siste ${dates.length} dager med synkede data.</div>`;
+}
 function renderBodyData(){
+  try{recordBodySnapshot();renderBodyTrends();}catch(e){console.warn('trends',e);}
   const data=BODY_DATA;
   if(bodySyncTime)document.getElementById('kropp-sync-time').textContent='Sist synket: '+new Date(bodySyncTime).toLocaleString('no',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
   else document.getElementById('kropp-sync-time').textContent='Trykk Oppdater for å hente Garmin-data';
