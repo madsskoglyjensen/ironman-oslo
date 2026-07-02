@@ -697,9 +697,9 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
 <script>
 // ── CONSTANTS ─────────────────────────────────────────────────────────────────
 const RACE_DATE = new Date('2026-09-20');
-const START_DATE = new Date('2026-06-28');
-// Tracking starts 30 June — activities before this are hidden and not counted
-const ACT_START_STR = '2026-06-30';
+const START_DATE = new Date('2026-06-29'); // Monday — so plan days line up with real weekdays
+// Tracking starts Mon 29 June — activities before this are hidden and not counted
+const ACT_START_STR = '2026-06-29';
 function filterActs(arr){return (arr||[]).filter(a=>a&&a.date&&String(a.date).slice(0,10)>=ACT_START_STR);}
 
 // ── PLAN DATA (legacy single-session literal, superseded by mkPlan below) ───────
@@ -823,6 +823,18 @@ function mkPlan(){
   const weeks=[];
   for(let i=0;i<12;i++){
     const w=i+1;
+    if(w===1){ // matches what you actually did: Mon swim · Tue run · Wed bike
+      weeks.push([
+        S('swim','Svømming','2 km · teknikk + utholdenhet','60 min',[2,0,0],'Jevn kraul. Tell tak (SWOLF under 35).'),
+        S('run','Løping','6 km rolig · aerob base','40 min',[0,0,6],'Snakketempo i sone 2. Bygg grunnmuren.'),
+        S('bike','Sykkel Z2','38 km · rolig aerob','90 min',[0,38,0],'Sone 2, kadens 85–95. Bli kjent med sykkelen.'),
+        {...S('swim','Svømming','2 km · teknikk','55 min',[2,0,0],'Rolig teknikkfokus.'), second:S('strength','Styrke','30 min · bein + kjerne','30 min',[0,0,0],'Knebøy, utfall, planke, rygg. Skadeforebygging.')},
+        {...S('bike','Sykkel Z2','35 km · rolig','80 min',[0,35,0],'Aerob base, jevnt.'), second:S('strength','Styrke','30 min · helkropp','30 min',[0,0,0],'Vedlikehold, god teknikk.')},
+        S('bike','Lang sykkel','45 km','2t',[0,45,0],'Jevnt i sone 2. Spis/drikk hvert 20. min. Ukas første langtur.'),
+        S('run','Langtur','12 km','70 min',[0,0,12],'Rolig og jevnt. Tid på beina — øv på gel underveis.'),
+      ]);
+      continue;
+    }
     if(w===12){
       weeks.push([
         REST('Taper — hvil og lad'),
