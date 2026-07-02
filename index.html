@@ -702,8 +702,8 @@ const START_DATE = new Date('2026-06-28');
 const ACT_START_STR = '2026-06-30';
 function filterActs(arr){return (arr||[]).filter(a=>a&&a.date&&String(a.date).slice(0,10)>=ACT_START_STR);}
 
-// ── PLAN DATA (12 weeks) ──────────────────────────────────────────────────────
-const PLAN = [
+// ── PLAN DATA (legacy single-session literal, superseded by mkPlan below) ───────
+const _LEGACY_PLAN = [
   // Week 1
   [{type:'swim',name:'Svømming',detail:'2×1 km basseng · Teknikk',desc:'Fokus på kraulteknikk. Hvil 30 sek mellom km.',dur:'45 min',km:[2,0,0]},
    {type:'run', name:'Løping',  detail:'40 min rolig · Aerob base',desc:'Snakketempo. Ikke push.',dur:'40 min',km:[0,0,6]},
@@ -802,16 +802,79 @@ const PLAN = [
    {type:'race',name:'🏁 RACE DAY',detail:'3,8 km · 180 km · 42,2 km',desc:'12 uker. Alt for dette. Nyt hvert steg.',dur:'12–16t',km:[3.8,180,42.2]}],
 ];
 
+// ── REAL IRONMAN PLAN (two-a-days, 3-3-3 + strength + bricks) ───────────────────
+// Structure per week (research-based): Mon rest · Tue bike-intervals + strength ·
+// Wed swim + tempo run · Thu bike Z2 + strength · Fri swim(OW) + easy run ·
+// Sat long bike (+brick in build/peak) · Sun long run. Volumes periodize by phase.
+function mkPlan(){
+  const S=(type,name,detail,dur,km,desc)=>({type,name,detail,desc:desc||'',dur,km});
+  const REST=(note)=>S('rest','Hvile',note||'Full restitusjon','—',[0,0,0],'Hviledag — recovery ER trening. Valgfritt: 15–20 min lett mobilitet/uttøying.');
+  const LB =[45,60,75,55,90,105,120,70,135,150,95,180];
+  const LBt=['2t','2,5t','3t','2t','3,5t','4t','4,5t','2,5t','5t','5,5t','3,5t','6t'];
+  const LR =[12,14,16,11,18,20,22,13,24,26,15,42.2];
+  const LRt=['70 min','80 min','90 min','60 min','1,75t','2t','2,25t','75 min','2,5t','2,75t','80 min','—'];
+  const brickR=[0,0,3,0,5,6,8,0,10,10,0,0];
+  const owF =[0,0,2.5,0,2.5,3,3.5,2,3.8,3.5,2.5,0];
+  const swimB=[2,2.5,2.5,1.5,2.5,3,3,2,3,3,2.5,1];
+  const bikeK=[38,42,45,30,48,52,55,35,55,55,40,20];
+  const bikeM=[35,40,45,30,50,55,55,35,55,55,40,0];
+  const runQ =[6,7,8,5,9,10,10,6,10,10,7,4];
+  const rec=w=>w===4||w===8;
+  const weeks=[];
+  for(let i=0;i<12;i++){
+    const w=i+1;
+    if(w===12){
+      weeks.push([
+        REST('Taper — hvil og lad'),
+        {...S('bike','Åpningstur','30 min · 3×1 min fart','30 min',[0,15,0],'Vekk beina, ikke tren. Kjenn at kroppen er kvikk.'), second:S('strength','Lett kjerne','15 min mobilitet','15 min',[0,0,0],'Bare hold deg smidig.')},
+        {...S('swim','Åpningssvøm','800 m rolig · føl vannet','25 min',[0.8,0,0],'Kort og lett.'), second:S('run','Utløpning','20 min · 4×20 s fart','20 min',[0,0,4],'Kvikk, ikke sliten.')},
+        REST('Pakk utstyr · sjekk sykkel · legg ut depotbager'),
+        S('rest','Full hvile','Karbolad · sov tidlig','—',[0,0,0],'8–10 g karbo/kg. Hydrer. Legg deg tidlig.'),
+        S('rest','Race eve','10 min tøying · sov','—',[0,0,0],'Alt er gjort. Sett alarm ×3.'),
+        S('race','🏁 RACE DAY','3,8 km · 180 km · 42,2 km','12–16t',[3.8,180,42.2],'12 uker for dette. Del dagen i fire. Nyt hvert steg — du er en ironman.'),
+      ]);
+      continue;
+    }
+    const r=rec(w);
+    const day=[];
+    day.push(REST());
+    day.push({...S('bike','Sykkelintervaller',`${bikeK[i]} km · ${r?'rolig':'4–5×4 min hardt'}`,r?'75 min':'90 min',[0,bikeK[i],0], r?'Rolig teknikk i hvileuke.':'Nøkkeløkt. Drag over racefart med lang pause. Her bygger du watt.'),
+      second:S('strength','Styrke','30 min · bein + kjerne','30 min',[0,0,0],'Knebøy, utfall, planke, rygg. Skadeforebygging og økonomi.')});
+    day.push({...S('swim','Svømming',`${swimB[i]} km · teknikk + utholdenhet`,r?'45 min':'60 min',[swimB[i],0,0],'Jevn kraul. Tell tak (SWOLF under 35).'),
+      second:S('run','Tempoløp',`${runQ[i]} km · ${r?'rolig':'20 min terskel'}`,r?'40 min':'50 min',[0,0,runQ[i]], r?'Rolig i hvileuke.':'Kvalitet: 20 min i terskeltempo etter oppvarming.')});
+    day.push({...S('bike','Sykkel Z2',`${bikeM[i]} km · rolig aerob`,r?'75 min':'90 min',[0,bikeM[i],0],'Sone 2. Jevn kadens 85–95. Bygger den aerobe motoren.'),
+      second:S('strength','Styrke','30 min · helkropp','30 min',[0,0,0],'Vedlikehold. Lett–moderat vekt, god teknikk.')});
+    const owk=owF[i];
+    day.push({...S('swim', owk>=2.5?'Åpent vann':'Svømming', `${owk||swimB[i]} km${owk>=2.5?' · Hvervenbukta':''}`, r?'50 min':'65 min',[owk||swimB[i],0,0], owk>=2.5?'Åpent vann — våtdrakt, orientering, rolig og trygt.':'Basseng, jevnt drag.'),
+      second:S('run','Rolig løp',`${Math.max(5,runQ[i]-2)} km rolig`,'45 min',[0,0,Math.max(5,runQ[i]-2)],'Sone 2, restitusjonsfart. Beina skal føles lette.')});
+    const br=brickR[i];
+    day.push(br>0
+      ? S('brick',`Brick · ${LB[i]}+${br}`,`${LB[i]} km sykkel → ${br} km løp`,LBt[i],[0,LB[i],br],'Løp rett etter sykkel — «murstein-bein». Hold IM-racefart på løpet. Test fueling nøye.')
+      : S('bike','Lang sykkel',`${LB[i]} km${r?' lett':''}`,LBt[i],[0,LB[i],0], r?'Kortere langtur, rolig.':'Jevnt i sone 2. Spis/drikk hvert 20. min. Test racefart siste time i toppuker.'));
+    day.push(S('run','Langtur',`${LR[i]} km${r?' rolig':''}`,LRt[i],[0,0,LR[i]], r?'Restitusjonsuke — hold igjen.':'Rolig og jevnt. Bygg tid på beina. Øv på gel underveis.'));
+    weeks.push(day);
+  }
+  return weeks;
+}
+const PLAN = mkPlan();
+
+// Session enumeration helpers (each day = 1 primary + optional .second session)
+function daySessions(w,d){const day=PLAN[w-1]&&PLAN[w-1][d];if(!day)return[];const out=[{s:day,key:`w${w}d${d}`,slot:day.second?'AM':'',w,d}];if(day.second)out.push({s:day.second,key:`w${w}d${d}_2`,slot:'PM',w,d});return out;}
+function weekSessions(w){const out=[];for(let d=0;d<7;d++)out.push(...daySessions(w,d));return out;}
+function sessFromKey(key){const m=String(key).match(/^w(\d+)d(\d+)(_2)?$/);if(!m)return null;const day=PLAN[m[1]-1]&&PLAN[m[1]-1][m[2]];if(!day)return null;return m[3]?day.second:day;}
+function allPlanned(){const out=[];for(let w=1;w<=12;w++)weekSessions(w).forEach(x=>out.push({...x,date:sessionDate(x.w,x.d)}));return out;}
+function nextSessionInfo(){const now0=new Date();now0.setHours(0,0,0,0);const pend=allPlanned().filter(x=>x.s.type!=='rest'&&!S.completed[x.key]);pend.sort((a,b)=>(a.date-b.date)||((a.slot==='PM'?1:0)-(b.slot==='PM'?1:0)));return pend.find(x=>x.date>=now0)||pend[0]||null;}
+
 const CHALLENGES_DEF = [
-  {icon:'🏊',name:'Fullfør alle svømminger',check:(w,c)=>PLAN[w-1].filter((d,i)=>d.type==='swim'&&c[`w${w}d${i}`]).length>=PLAN[w-1].filter(d=>d.type==='swim').length&&PLAN[w-1].some(d=>d.type==='swim')},
-  {icon:'🚴',name:'Fullfør langturen',check:(w,c)=>PLAN[w-1].filter((d,i)=>d.type==='bike'&&c[`w${w}d${i}`]).length>=1},
-  {icon:'🏃',name:'Fullfør lang løpetur',check:(w,c)=>PLAN[w-1].filter((d,i)=>d.type==='run'&&c[`w${w}d${i}`]).length>=1},
-  {icon:'⭐',name:'Gi en økt 5 stjerner',check:(w,c)=>Object.entries(c).some(([k,v])=>k.startsWith(`w${w}`)&&v.star===5)},
-  {icon:'🔥',name:'Logg din første økt',check:(w,c)=>Object.keys(c).some(k=>k.startsWith(`w${w}`))},
+  {icon:'🏊',name:'Fullfør ukas svømminger',check:(w,c)=>{const s=weekSessions(w).filter(x=>x.s.type==='swim');return s.length>0&&s.every(x=>c[x.key]);}},
+  {icon:'🚴',name:'Fullfør langturen',check:(w,c)=>weekSessions(w).some(x=>(x.s.type==='bike'||x.s.type==='brick')&&/lang|brick/i.test(x.s.name)&&c[x.key])},
+  {icon:'🏃',name:'Fullfør langturen (løp)',check:(w,c)=>weekSessions(w).some(x=>x.s.type==='run'&&/langtur/i.test(x.s.name)&&c[x.key])},
+  {icon:'💪',name:'Begge styrkeøkter',check:(w,c)=>{const s=weekSessions(w).filter(x=>x.s.type==='strength');return s.length>0&&s.every(x=>c[x.key]);}},
+  {icon:'🔥',name:'Logg en økt denne uka',check:(w,c)=>weekSessions(w).some(x=>c[x.key])},
 ];
 
-// Season km goals (total planned km across all 12 weeks)
-const SEASON_GOALS = PLAN.flat().reduce((a,d)=>({swim:a.swim+d.km[0],bike:a.bike+d.km[1],run:a.run+d.km[2]}),{swim:0,bike:0,run:0});
+// Season km goals (primary + second sessions across all 12 weeks)
+const SEASON_GOALS = PLAN.flat().reduce((a,d)=>{const add=s=>{a.swim+=s.km[0];a.bike+=s.km[1];a.run+=s.km[2];};add(d);if(d.second)add(d.second);return a;},{swim:0,bike:0,run:0});
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let S = JSON.parse(localStorage.getItem('im_state')||'null') || {week:1,completed:{},form:null,pendingRating:0};
@@ -878,11 +941,10 @@ function calcKm(){
     else if(a.type==='run')ru+=a.km;
   });
   Object.keys(S.completed).forEach(k=>{
-    const m=k.match(/w(\d+)d(\d+)/);if(!m)return;
-    const d=PLAN[m[1]-1]?.[m[2]];if(!d)return;
+    const s=sessFromKey(k);if(!s)return;
     const val=S.completed[k];
-    if(val&&val.date&&garminDates.has(val.date.slice(0,10)))return;
-    sv+=d.km[0];bi+=d.km[1];ru+=d.km[2];
+    if(val&&val.date&&garminDates.has(String(val.date).slice(0,10)))return; // auto/garmin already counted above
+    sv+=s.km[0];bi+=s.km[1];ru+=s.km[2];
   });
   return{sv:Math.round(sv*10)/10,bi:Math.round(bi),ru:Math.round(ru)};
 }
@@ -1088,7 +1150,7 @@ function computeAdaptive(week){
   const weekStart=new Date(START_DATE.getTime()+(week-1)*7*86400000);
   const weekEnd=new Date(weekStart.getTime()+7*86400000);
   const garminThisWeek=GARMIN_ACTS.filter(a=>{const d=new Date(a.date);return d>=weekStart&&d<weekEnd;});
-  const planSessions=PLAN[week-1];
+  const planSessions=weekSessions(week).map(x=>x.s);
   const nonRest=planSessions.filter(s=>s.type!=='rest');
   let matched=0;
   const usedGarmin=new Set();
@@ -1159,6 +1221,11 @@ function computeReadiness(){
   }
   let band=score>=65?'high':score>=45?'moderate':score>=30?'low':'verylow';
   if(hrv&&hrv.toLowerCase().includes('poor')&&band==='high')band='moderate';
+  // Overload guard: heavy accumulated fatigue (negative form/TSB) pulls the band down
+  let overload=false;
+  try{const f=computeForm();const tsb=f?f.tsb:null;
+    if(tsb!=null){if(band==='high'&&tsb<-25){band='moderate';overload=true;}else if(band==='moderate'&&tsb<-32){band='low';overload=true;}}
+  }catch(e){}
   const map={high:'push',moderate:'moderate',low:'reduce',verylow:'rest'};
   const titles={high:'🟢 Klar — kjør på',moderate:'🟡 Tren, men demp intensiteten',low:'🟠 Redusert i dag',verylow:'🔴 Hvil / veldig lett'};
   const recTxt=rec?` Restitusjonstid igjen: ~${rec}t.`:'';
@@ -1169,6 +1236,7 @@ function computeReadiness(){
     verylow:`Training Readiness ${score} — prioriter restitusjon i dag. Kort rolig økt eller hvil.${recTxt}`,
   };
   let msg=msgs[band];
+  if(overload)msg='📉 Formen (TSB) viser opphopet tretthet — jeg har dempet neste økt ekstra. '+msg;
   if(night)msg='🌙 Dette er kveldstall — Body Battery lades opp av natta. Sjekk igjen når du våkner, så justeres økta på morgen-readiness. '+msg;
   return{have:true,band,score,recoveryTime:rec,adjust:map[band],title:titles[band],msg,night,feedback:tr.feedback};
 }
@@ -1200,21 +1268,22 @@ function render(){
     dots.appendChild(el);
   }
 
-  // Today's workout
-  const today=new Date();
-  const daysSinceStart=Math.floor((today-START_DATE)/86400000);
-  const todayDayIdx=daysSinceStart>=0&&daysSinceStart<84?daysSinceStart%7:-1;
-  const todayWeek=daysSinceStart>=0?Math.floor(daysSinceStart/7)+1:1;
-  const todaySession=(todayWeek>=1&&todayWeek<=12&&todayDayIdx>=0)?PLAN[todayWeek-1]?.[todayDayIdx]:null;
+  // Next workout (today's AM/PM or the next upcoming) — readiness-adapted
   const hero=document.getElementById('today-hero');
   const R=computeReadiness();
-  const session=todaySession?adaptedSession(todaySession,R.adjust):null;
-  if(session&&session.type!=='rest'){
+  const nextInfo=nextSessionInfo();
+  const session=nextInfo?adaptedSession(nextInfo.s,R.adjust):null;
+  if(session){
+    const now0=new Date();now0.setHours(0,0,0,0);
+    const nd=new Date(nextInfo.date);nd.setHours(0,0,0,0);
+    const dd=Math.round((nd-now0)/86400000);
+    const isToday=dd<=0;
+    const whenTxt=isToday?(nextInfo.slot==='PM'?'ØKT 2 I DAG':'DAGENS ØKT'):dd===1?'NESTE ØKT · I MORGEN':'NESTE ØKT · '+nd.toLocaleDateString('no',{weekday:'long'}).toUpperCase();
     const rgb=typeRGB(session.type);
     hero.style.background=`rgba(${rgb},0.08)`;
     hero.style.borderColor=`rgba(${rgb},0.25)`;
     document.getElementById('today-eyebrow').style.color=typeVar(session.type);
-    document.getElementById('today-eyebrow').textContent=session.adapted?'DAGENS ØKT (JUSTERT)':'DAGENS ØKT';
+    document.getElementById('today-eyebrow').textContent=session.adapted?whenTxt+' (JUSTERT)':whenTxt;
     document.getElementById('today-title').textContent=`${typeEmoji(session.type)} ${session.name}`;
     document.getElementById('today-detail').textContent=session.detail;
     const chips=[];
@@ -1226,21 +1295,17 @@ function render(){
     const btn=document.getElementById('today-btn');
     btn.style.background=`rgba(${rgb},0.15)`;
     btn.style.color=typeVar(session.type);
-  } else if(session){
-    hero.style.background='rgba(60,60,60,0.12)';
-    hero.style.borderColor='rgba(60,60,60,0.3)';
-    document.getElementById('today-eyebrow').style.color='var(--muted2)';
-    document.getElementById('today-eyebrow').textContent='DAGENS ØKT';
-    document.getElementById('today-title').textContent='😴 Hviledag';
-    document.getElementById('today-detail').textContent='Aktiv hvile · Tøying · God søvn';
+    btn.textContent=isToday?'START ØKT →':'SE ØKT →';
+  } else {
+    hero.style.background='rgba(37,211,102,0.1)';
+    hero.style.borderColor='rgba(37,211,102,0.3)';
+    document.getElementById('today-eyebrow').style.color='var(--run)';
+    document.getElementById('today-eyebrow').textContent='ALT FULLFØRT';
+    document.getElementById('today-title').textContent='🎉 Alle økter logget!';
+    document.getElementById('today-detail').textContent='Sterkt jobbet. Nyt hvilen.';
     document.getElementById('today-chips').innerHTML='';
     const btn=document.getElementById('today-btn');
-    btn.style.background='rgba(60,60,60,0.2)';btn.style.color='var(--muted2)';
-    btn.textContent='LEGG TIL AKTIVITET';
-  } else {
-    document.getElementById('today-title').textContent='🏁 Ingen plan for i dag';
-    document.getElementById('today-detail').textContent='Se ukeplan for oversikt';
-    document.getElementById('today-chips').innerHTML='';
+    btn.style.background='rgba(37,211,102,0.15)';btn.style.color='var(--run)';btn.textContent='SE UKEPLAN →';
   }
 
   // Progress rings
@@ -1298,28 +1363,34 @@ function renderUke(){
   const days=['Man','Tir','Ons','Tor','Fre','Lør','Søn'];
   const dl=document.getElementById('days-list');
   dl.innerHTML='';
-  PLAN[w-1].forEach((rawDay,i)=>{
-    const key=`w${w}d${i}`;
-    const isDone=!!S.completed[key];
-    const day=isTodayWD(w,i)?adaptedSession(rawDay,R.adjust):{...rawDay,adapted:false};
-    const el=document.createElement('div');
-    el.className='day-card'+(isDone?' done':'')+(day.adapted?' adapted':'');
-    const stars=S.completed[key]?.star?'★'.repeat(S.completed[key].star):'';
-    let tgt=null;try{tgt=getSessionTargets(day);}catch(e){console.warn('targets',e);}
-    const zoneBadge=tgt&&day.type!=='rest'?`<div class="zone-pill" style="background:rgba(${tgt.rgb},0.12);color:rgba(${tgt.rgb},1)">S${tgt.zone} ${tgt.bpm.lo}–${tgt.bpm.hi}bpm${tgt.pace?' · '+tgt.pace+'/km':''}</div>`:'';
-    el.innerHTML=`
-      ${isDone?'<div class="done-check">✓</div>':''}
-      ${day.adapted&&!isDone?'<div class="adapt-dot"></div>':''}
-      <div class="day-icon ${day.type}">${typeEmoji(day.type)}</div>
-      <div class="day-info">
-        <div class="day-name">${days[i]}${isTodayWD(w,i)?' <span style="color:var(--accent)">· i dag</span>':''} · ${day.name}</div>
-        <div class="day-detail">${day.detail}${stars?' · '+stars:''}</div>
-        ${isDone?'':zoneBadge}
-      </div>
-      <span class="day-tag ${day.type}">${day.dur}</span>`;
-    if(!isDone&&rawDay.type!=='rest'){el.onclick=()=>openWorkout(w,i);el.classList.add('tappable');}
-    dl.appendChild(el);
-  });
+  const nextKey=(nextSessionInfo()||{}).key;
+  for(let i=0;i<7;i++){
+    daySessions(w,i).forEach(x=>{
+      const rawS=x.s;const key=x.key;const isDone=!!S.completed[key];
+      const auto=S.completed[key]&&S.completed[key].auto;
+      const sess=(key===nextKey)?adaptedSession(rawS,R.adjust):{...rawS,adapted:false};
+      const el=document.createElement('div');
+      el.className='day-card'+(isDone?' done':'')+(sess.adapted?' adapted':'');
+      const stars=S.completed[key]?.star?'★'.repeat(S.completed[key].star):'';
+      let tgt=null;try{tgt=getSessionTargets(sess);}catch(e){console.warn('targets',e);}
+      const zoneBadge=tgt&&sess.type!=='rest'?`<div class="zone-pill" style="background:rgba(${tgt.rgb},0.12);color:rgba(${tgt.rgb},1)">S${tgt.zone} ${tgt.bpm.lo}–${tgt.bpm.hi}bpm${tgt.pace?' · '+tgt.pace+'/km':''}</div>`:'';
+      const slotTag=x.slot?` <span style="font-size:9px;font-weight:800;color:var(--muted2)">${x.slot}</span>`:'';
+      const todayTag=(x.slot!=='PM'&&isTodayWD(w,i))?' <span style="color:var(--accent)">· i dag</span>':'';
+      const autoTag=auto?' <span style="color:var(--swim);font-size:11px">⌚</span>':'';
+      el.innerHTML=`
+        ${isDone?'<div class="done-check">✓</div>':''}
+        ${sess.adapted&&!isDone?'<div class="adapt-dot"></div>':''}
+        <div class="day-icon ${sess.type}">${typeEmoji(sess.type)}</div>
+        <div class="day-info">
+          <div class="day-name">${days[i]}${slotTag}${todayTag} · ${sess.name}${autoTag}</div>
+          <div class="day-detail">${sess.detail}${stars?' · '+stars:''}</div>
+          ${isDone?'':zoneBadge}
+        </div>
+        <span class="day-tag ${sess.type}">${sess.dur}</span>`;
+      if(!isDone&&rawS.type!=='rest'){const wi=w,ii=i,which=(x.slot==='PM')?'_2':'';el.onclick=()=>openWorkout(wi,ii,which);el.classList.add('tappable');}
+      dl.appendChild(el);
+    });
+  }
 
   const ch=document.getElementById('challenges');
   ch.innerHTML='';
@@ -1338,8 +1409,7 @@ function renderUke(){
 function renderTracker(){
   let sv=0,bi=0,ru=0,br=0,total=0,sn=0,bn=0,rn=0;const ratings=[];
   Object.entries(S.completed).forEach(([k,v])=>{
-    const m=k.match(/w(\d+)d(\d+)/);if(!m)return;
-    const d=PLAN[m[1]-1]?.[m[2]];if(!d)return;
+    const d=sessFromKey(k);if(!d)return;
     sv+=d.km[0];bi+=d.km[1];ru+=d.km[2];
     if(d.type==='swim')sn++;if(d.type==='bike')bn++;if(d.type==='run')rn++;
     if(d.type==='brick')br++;total++;if(v.star)ratings.push(v.star);
@@ -1356,9 +1426,10 @@ function renderTracker(){
   document.getElementById('t-avg').textContent=avg?avg+'★':'—';
   const ws=document.getElementById('week-summary');ws.innerHTML='';
   for(let w=1;w<=12;w++){
-    const d=PLAN[w-1].filter((_,i)=>S.completed[`w${w}d${i}`]).length;
+    const ss=weekSessions(w).filter(x=>x.s.type!=='rest');
+    const d=ss.filter(x=>S.completed[x.key]).length;
     if(!d)continue;
-    const t=PLAN[w-1].filter(x=>x.type!=='rest').length;
+    const t=ss.length;
     const el=document.createElement('div');el.className='week-sum-item';
     el.innerHTML=`<div class="wsi-dot" style="background:${d===t?'var(--run)':'var(--bike)'}"></div>
       <div class="wsi-info"><div class="wsi-title">Uke ${w}</div>
@@ -1375,11 +1446,12 @@ function renderHistory(){
   list.innerHTML='';
   entries.forEach(([key,val])=>{
     const m=key.match(/w(\d+)d(\d+)/);if(!m)return;
-    const d=PLAN[m[1]-1]?.[m[2]];if(!d)return;
+    const d=sessFromKey(key);if(!d)return;
     const el=document.createElement('div');el.className='hist-item';
     const dt=new Date(val.date);
+    const auto=val.auto?'<span style="font-size:10px;color:var(--swim);font-weight:700"> ⌚ Garmin</span>':'';
     el.innerHTML=`<div class="hist-dot" style="background:${typeColor(d.type)}"></div>
-      <div class="hist-info"><div class="hist-title">${typeEmoji(d.type)} ${d.name}</div>
+      <div class="hist-info"><div class="hist-title">${typeEmoji(d.type)} ${d.name}${auto}</div>
       <div class="hist-meta">Uke ${m[1]} · ${dt.toLocaleDateString('no',{day:'numeric',month:'short'})}</div></div>
       <div class="hist-stars">${val.star?'★'.repeat(val.star):''}</div>`;
     list.appendChild(el);
@@ -1393,11 +1465,23 @@ function garminMatchOn(w,d,type){
   const ds=sessionDate(w,d).toISOString().slice(0,10);
   return GARMIN_ACTS.find(a=>a.date===ds&&(a.type===type||(type==='brick'&&(a.type==='run'||a.type==='bike'))))||null;
 }
+// Per-session status
+function sessStatus(x){
+  if(x.s.type==='rest')return'rest';
+  if(S.completed[x.key])return S.completed[x.key].auto?'garmin':'done';
+  if(garminMatchOn(x.w,x.d,x.s.type))return'garmin';
+  const day0=new Date();day0.setHours(0,0,0,0);
+  return sessionDate(x.w,x.d)<day0?'missed':'upcoming';
+}
+// Day-level aggregate status (for the log grid)
 function sessionStatus(w,d){
-  const s=PLAN[w-1][d];const key=`w${w}d${d}`;
-  if(s.type==='rest')return{st:'rest'};
-  if(S.completed[key])return{st:'done'};
-  if(garminMatchOn(w,d,s.type))return{st:'garmin'};
+  const ss=daySessions(w,d).filter(x=>x.s.type!=='rest');
+  if(!ss.length)return{st:'rest'};
+  let done=0,garmin=0;
+  ss.forEach(x=>{const st=sessStatus(x);if(st==='done')done++;else if(st==='garmin')garmin++;});
+  const total=ss.length,fin=done+garmin;
+  if(fin>=total)return{st:(garmin>0&&done===0)?'garmin':'done'};
+  if(fin>0)return{st:'partial'};
   const day0=new Date();day0.setHours(0,0,0,0);
   if(sessionDate(w,d)<day0)return{st:'missed'};
   return{st:'upcoming'};
@@ -1408,17 +1492,17 @@ function analyzeTraining(){
   const actual=calcKm();
   const planned=SEASON_GOALS;
   const ptd={swim:0,bike:0,run:0};
-  for(let w=1;w<=curW&&w<=12;w++)PLAN[w-1].forEach(s=>{ptd.swim+=s.km[0];ptd.bike+=s.km[1];ptd.run+=s.km[2];});
+  for(let w=1;w<=curW&&w<=12;w++)weekSessions(w).forEach(x=>{ptd.swim+=x.s.km[0];ptd.bike+=x.s.km[1];ptd.run+=x.s.km[2];});
   const weekly=[];
   for(let w=1;w<=12;w++){
     let total=0,done=0,plannedKm=0;
-    PLAN[w-1].forEach((s,d)=>{plannedKm+=s.km[0]+s.km[1]+s.km[2];if(s.type!=='rest'){total++;const st=sessionStatus(w,d).st;if(st==='done'||st==='garmin')done++;}});
+    weekSessions(w).forEach(x=>{plannedKm+=x.s.km[0]+x.s.km[1]+x.s.km[2];if(x.s.type!=='rest'){total++;const st=sessStatus(x);if(st==='done'||st==='garmin')done++;}});
     weekly.push({w,total,done,plannedKm:Math.round(plannedKm)});
   }
-  const missed={swim:0,bike:0,run:0,brick:0};let doneTot=0,pastTot=0;
-  for(let w=1;w<=12;w++)PLAN[w-1].forEach((s,d)=>{
-    if(s.type==='rest')return;const st=sessionStatus(w,d).st;
-    if(st==='missed'){pastTot++;missed[s.type]=(missed[s.type]||0)+1;}
+  const missed={swim:0,bike:0,run:0,brick:0,strength:0};let doneTot=0,pastTot=0;
+  for(let w=1;w<=12;w++)weekSessions(w).forEach(x=>{
+    if(x.s.type==='rest')return;const st=sessStatus(x);
+    if(st==='missed'){pastTot++;missed[x.s.type]=(missed[x.s.type]||0)+1;}
     else if(st==='done'||st==='garmin'){pastTot++;doneTot++;}
   });
   const compliance=pastTot?Math.round(doneTot/pastTot*100):null;
@@ -1516,11 +1600,13 @@ function renderAnalysis(){
         const st=sessionStatus(w,d).st;
         let bg='var(--surface2)',mark='',op='1';
         if(s.type==='rest'){bg='var(--surface2)';op='.4';}
-        else if(st==='done'){bg='rgba(0,230,118,.16)';mark='<span class="log-day-mark" style="color:var(--run)">✓</span>';}
-        else if(st==='garmin'){bg='rgba(0,212,255,.16)';mark='<span class="log-day-mark" style="color:var(--swim)">✓</span>';}
-        else if(st==='missed'){bg='rgba(255,55,95,.14)';mark='<span class="log-day-mark" style="color:var(--race)">✗</span>';}
+        else if(st==='done'){bg='rgba(37,211,102,.16)';mark='<span class="log-day-mark" style="color:var(--run)">✓</span>';}
+        else if(st==='garmin'){bg='rgba(34,197,255,.16)';mark='<span class="log-day-mark" style="color:var(--swim)">✓</span>';}
+        else if(st==='partial'){bg='rgba(255,122,26,.16)';mark='<span class="log-day-mark" style="color:var(--accent)">½</span>';}
+        else if(st==='missed'){bg='rgba(255,77,109,.14)';mark='<span class="log-day-mark" style="color:var(--race)">✗</span>';}
         else{bg='var(--surface3)';}
-        cells+=`<div class="log-day" style="background:${bg};opacity:${op}"><div class="log-day-dow">${dows[d]}</div><div>${typeEmoji(s.type)}</div>${mark}</div>`;
+        const two=s.second?'<div style="position:absolute;bottom:2px;right:4px;font-size:8px;font-weight:800;color:var(--muted2)">×2</div>':'';
+        cells+=`<div class="log-day" style="background:${bg};opacity:${op}"><div class="log-day-dow">${dows[d]}</div><div>${typeEmoji(s.type)}</div>${mark}${two}</div>`;
       });
       html+=`<div class="log-week">
         <div class="log-week-head"><div class="log-week-title">Uke ${w}${w===a.curW?' · nå':''}</div>
@@ -1549,7 +1635,7 @@ function deepAnalysis(){
   const curW=autoWeek();
   const wa=actsInWeek(curW);
   const actualH=Math.round(wa.reduce((s,a)=>s+actMin(a),0)/60*10)/10;
-  const plannedH=Math.round(PLAN[curW-1].reduce((s,d)=>s+parseDurMin(d.dur),0)/60*10)/10;
+  const plannedH=Math.round(weekSessions(curW).reduce((s,x)=>s+parseDurMin(x.s.dur),0)/60*10)/10;
   const[recLo,recHi]=recHoursForWeek(curW);
   let vol;
   if(actualH<recLo*0.6)vol={t:'For lite volum',c:'bad',msg:`${actualH}t logget denne uka. Anbefalt uke ${curW}: ${recLo}–${recHi}t. Legg på flere eller lengre rolige økter.`};
@@ -1653,8 +1739,8 @@ function renderMilestones(){
   const longest=t=>Math.max(0,...GARMIN_ACTS.filter(a=>a.type===t).map(a=>a.km));
   const totBike=sum('bike'),totRun=sum('run'),longRun=longest('run'),longBike=longest('bike'),longSwim=longest('swim');
   const logged=Object.keys(S.completed).length;
-  const hasBrick=GARMIN_ACTS.some(a=>a.type==='brick')||Object.keys(S.completed).some(k=>{const m=k.match(/w(\d+)d(\d+)/);return m&&PLAN[m[1]-1]?.[m[2]]?.type==='brick';});
-  let fullWeek=false;for(let w=1;w<=12;w++){const t=PLAN[w-1].filter(x=>x.type!=='rest').length;const dn=PLAN[w-1].filter((_,i)=>S.completed[`w${w}d${i}`]).length;if(t&&dn>=t){fullWeek=true;break;}}
+  const hasBrick=GARMIN_ACTS.some(a=>a.type==='brick')||Object.keys(S.completed).some(k=>sessFromKey(k)?.type==='brick');
+  let fullWeek=false;for(let w=1;w<=12;w++){const ss=weekSessions(w).filter(x=>x.s.type!=='rest');if(ss.length&&ss.every(x=>S.completed[x.key])){fullWeek=true;break;}}
   const ms=[
     {ic:'🔥',name:'Første økt',done:logged>=1||GARMIN_ACTS.length>=1,sub:'i gang!'},
     {ic:'🏊',name:'3,8 km svøm',done:longSwim>=3.8,sub:`${Math.round(longSwim*10)/10}/3,8 km`},
@@ -1669,9 +1755,30 @@ function renderMilestones(){
 }
 
 // ── RACE-DAY PLAN ───────────────────────────────────────────────────────────────
+// Confidence-to-finish: 0-100 from the pillars that actually decide an Ironman
+function computeConfidence(){
+  const longest=t=>Math.max(0,...GARMIN_ACTS.filter(a=>a.type===t||(t==='bike'&&a.type==='brick')).map(a=>a.km));
+  const clamp=x=>Math.max(0,Math.min(1,x));
+  const longBike=longest('bike'),longRun=longest('run'),longSwim=longest('swim');
+  const hasBrick=GARMIN_ACTS.some(a=>a.type==='brick')||Object.keys(S.completed).some(k=>sessFromKey(k)?.type==='brick');
+  let comp=null;try{comp=analyzeTraining().compliance;}catch(e){}
+  const pillars=[
+    {p:clamp(longBike/170)*30, w:30, label:'Lang sykkel'},
+    {p:clamp(longRun/30)*20, w:20, label:'Lang løp'},
+    {p:clamp(longSwim/3.8)*15, w:15, label:'Svømdistanse'},
+    {p:(hasBrick?1:0)*10, w:10, label:'Brick'},
+    {p:((comp||0)/100)*15, w:15, label:'Gjennomføring'},
+  ];
+  // weeks-of-training pillar (consistency over time)
+  const wk=autoWeek();const weeksPillar=clamp(wk/12)*10;
+  const score=Math.round(pillars.reduce((a,b)=>a+b.p,0)+weeksPillar);
+  const band=score>=85?['Race-klar','var(--run)']:score>=65?['Godt rustet','var(--run)']:score>=40?['På god vei','var(--bike)']:['Tidlig i reisen','var(--muted2)'];
+  return{score:Math.min(100,score),band,longBike,longRun,longSwim,hasBrick,comp};
+}
 function renderRaceDay(){
   const host=document.getElementById('page-race');if(!host)return;
   const A=computeAthlete();
+  const conf=computeConfidence();
   const swimSecPer100=125;                        // ~2:05/100m, developing OW swimmer
   const swimSec=RACE.swimKm*10*swimSecPer100;
   const t1=6*60,t2=4*60;
@@ -1690,6 +1797,18 @@ function renderRaceDay(){
       <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:var(--race);margin-bottom:6px">ESTIMERT SLUTTID</div>
       <div class="rd-total">${fmtClock(total)}</div>
       <div style="font-size:12px;color:var(--muted2);margin-top:8px">Basert på dine Garmin-tall i dag · ${daysToRace} dager igjen. Estimatet forbedres når du trener.</div>
+    </div>
+    <div class="section-title">FULLFØRINGSTILLIT</div>
+    <div class="an-card" style="display:flex;align-items:center;gap:16px">
+      <div class="readiness-ring-wrap" style="width:76px;height:76px;flex-shrink:0">
+        <svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" fill="none" stroke="var(--surface2)" stroke-width="7"/>
+        <circle cx="38" cy="38" r="30" fill="none" stroke="${conf.band[1]}" stroke-width="7" stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="${188-conf.score/100*188}" transform="rotate(-90 38 38)"/></svg>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900">${conf.score}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:16px;font-weight:900;color:${conf.band[1]}">${conf.band[0]}</div>
+        <div style="font-size:12px;color:var(--muted2);margin-top:4px;line-height:1.5">Vokser når du fullfører nøkkeløktene: lengste sykkel (${Math.round(conf.longBike)}/170 km), lengste løp (${Math.round(conf.longRun)}/30 km), 3,8 km svøm ${conf.longSwim>=3.8?'✅':`(${Math.round(conf.longSwim*10)/10}/3,8)`}, brick ${conf.hasBrick?'✅':'⏳'}.</div>
+      </div>
     </div>
     <div class="section-title">PACING PER GREN ${learnIc('brick')}</div>
     <div class="rd-leg"><div class="rd-leg-ic" style="background:rgba(34,197,255,.14)">🏊</div>
@@ -1755,10 +1874,15 @@ function animateCount(el,to,dur){
 }
 
 // ── MODAL ─────────────────────────────────────────────────────────────────────
-function openWorkout(week,i){
-  const raw=PLAN[week-1][i];
-  const d=isTodayWD(week,i)?adaptedSession(raw,computeReadiness().adjust):{...raw,adapted:false};
-  activeKey=`w${week}d${i}`;S.pendingRating=0;
+function openWorkout(week,i,which){
+  which=which||'';
+  const day=PLAN[week-1][i];
+  const raw=which==='_2'?day.second:day;
+  if(!raw)return;
+  const key=`w${week}d${i}${which}`;
+  const isNext=(nextSessionInfo()||{}).key===key;
+  const d=isNext?adaptedSession(raw,computeReadiness().adjust):{...raw,adapted:false};
+  activeKey=key;S.pendingRating=0;
   document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
   document.getElementById('m-title').textContent=`${typeEmoji(d.type)} ${d.name}`;
   document.getElementById('m-sub').textContent=d.detail+(d.dur!=='—'?' · '+d.dur:'');
@@ -1807,14 +1931,9 @@ function openWorkout(week,i){
   document.getElementById('modal').classList.add('open');
 }
 function openTodayWorkout(){
-  const today=new Date();
-  const daysSinceStart=Math.floor((today-START_DATE)/86400000);
-  if(daysSinceStart<0||daysSinceStart>=84){showPage('uke');return;}
-  const week=Math.floor(daysSinceStart/7)+1;
-  const day=daysSinceStart%7;
-  const session=PLAN[week-1]?.[day];
-  if(session&&session.type!=='rest')openWorkout(week,day);
-  else showPage('uke');
+  const n=nextSessionInfo();
+  if(!n){showPage('uke');return;}
+  openWorkout(n.w,n.d,n.slot==='PM'?'_2':'');
 }
 function rateStar(n){S.pendingRating=n;document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('active',i<n));}
 function completeWorkout(){if(!activeKey)return;S.completed[activeKey]={star:S.pendingRating,date:new Date().toISOString()};save();closeModal();render();}
@@ -1842,10 +1961,22 @@ function matchToPlan(act){
   const week=Math.floor(daysSinceStart/7)+1;
   const day=daysSinceStart%7;
   if(week<1||week>12)return null;
-  const planned=PLAN[week-1]?.[day];
-  if(!planned||planned.type==='rest')return null;
-  if(planned.type===act.type||(planned.type==='brick'&&(act.type==='run'||act.type==='bike')))return{week,day,planned};
+  const cand=daySessions(week,day).find(x=>x.s.type!=='rest'&&(x.s.type===act.type||(x.s.type==='brick'&&(act.type==='run'||act.type==='bike'))));
+  if(cand)return{week,day,planned:cand.s,key:cand.key};
   return null;
+}
+// Auto-complete planned sessions that a Garmin activity fulfils
+function autoCompleteFromGarmin(){
+  let changed=false;
+  GARMIN_ACTS.forEach(a=>{
+    if(!a.date)return;
+    const daysSince=Math.floor((new Date(a.date)-START_DATE)/86400000);
+    if(daysSince<0)return;const week=Math.floor(daysSince/7)+1,day=daysSince%7;
+    if(week<1||week>12)return;
+    const cand=daySessions(week,day).find(x=>x.s.type!=='rest'&&!S.completed[x.key]&&(x.s.type===a.type||(x.s.type==='brick'&&(a.type==='run'||a.type==='bike'))));
+    if(cand){S.completed[cand.key]={auto:true,date:String(a.date).slice(0,10)+'T12:00:00',garminId:a.id,star:null};changed=true;}
+  });
+  if(changed)save();
 }
 
 function renderGarmin(){
@@ -1917,7 +2048,20 @@ function openGarminDetail(idx){
     const diff=target-ps;
     html+=`<div class="${diff>=0?'garmin-match':'garmin-nomatch'}">🎯 Ironman pace (6:00/km): ${diff>0?diff+'s raskere ✅':Math.abs(diff)+'s tregere — fint på trening!'}</div>`;
   }
-  if(match)html+=`<div class="garmin-match">📋 Matcher plan uke ${match.week}: ${match.planned.name}</div>`;
+  if(match){
+    html+=`<div class="garmin-match">📋 Matcher plan uke ${match.week}: ${match.planned.name}</div>`;
+    // "Traff du målet?" — compare planned target vs actual (great with chest strap)
+    let tgt=null;try{tgt=getSessionTargets(match.planned);}catch(e){}
+    if(tgt&&(act.hr||act.pace)){
+      const rows=[];
+      if(tgt.bpm&&act.hr){const inZone=act.hr>=tgt.bpm.lo-3&&act.hr<=tgt.bpm.hi+3;const below=act.hr<tgt.bpm.lo;
+        rows.push(`<div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted2)">Puls · mål S${tgt.zone} ${tgt.bpm.lo}–${tgt.bpm.hi}</span><span style="font-weight:800;color:${inZone?'var(--run)':'var(--bike)'}">${act.hr} bpm ${inZone?'✅':below?'↓ lavere':'↑ høyere'}</span></div>`);}
+      if(tgt.pace&&act.pace){const ps=paceToSec(act.pace),lo=paceToSec(tgt.pace.split('–')[0]),hi=paceToSec(tgt.pace.split('–')[1]||tgt.pace.split('–')[0]);const inP=ps<=hi+5&&ps>=lo-15;
+        rows.push(`<div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:var(--muted2)">Tempo · mål ${tgt.pace}/km</span><span style="font-weight:800;color:${inP?'var(--run)':'var(--bike)'}">${act.pace}/km ${inP?'✅':'⚠️'}</span></div>`);}
+      const hit=rows.filter(r=>r.includes('✅')).length;
+      html+=`<div class="workout-block" style="margin-top:12px"><h4>🎯 TRAFF DU MÅLET?</h4>${rows.join('')}<div style="font-size:12px;color:var(--muted2);margin-top:6px">${hit===rows.length?'På mål — akkurat som planlagt. 💪':'Litt utenfor målsonen — helt greit på trening, men verdt å merke seg.'}</div></div>`;
+    }
+  }
   document.getElementById('garmin-modal-content').innerHTML=html;
   document.getElementById('garmin-modal').classList.add('open');
 }
@@ -1935,7 +2079,7 @@ async function syncGarmin(){
         GARMIN_ACTS=filterActs(data.activities);garminSyncTime=new Date().toISOString();
         localStorage.setItem('garmin_acts',JSON.stringify(GARMIN_ACTS));
         localStorage.setItem('garmin_sync_time',garminSyncTime);
-        renderGarmin();render();renderBodyData();
+        autoCompleteFromGarmin();renderGarmin();render();renderBodyData();
         btn.textContent='✓ Synket!';setTimeout(()=>{btn.textContent='⟳ Synk nå';btn.classList.remove('syncing');},2000);return;
       }
     }
@@ -2081,6 +2225,7 @@ async function syncBodyData(){
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 S.week=autoWeek();save();
+try{autoCompleteFromGarmin();}catch(e){console.warn('autocomplete',e);}
 // Auto-sync body data if more than 4 hours old
 if(!bodySyncTime||Date.now()-new Date(bodySyncTime)>4*3600000){
   setTimeout(()=>syncBodyData(),1500);
