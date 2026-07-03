@@ -648,6 +648,9 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
   <div class="section-title">PERSONLIGE REKORDER</div>
   <div class="an-card" id="an-pbs"></div>
 
+  <div class="section-title">PROGRESJON PER GREN</div>
+  <div class="an-card" id="an-progression"></div>
+
   <div class="section-title">INNSIKT</div>
   <div class="an-card" id="an-insights"></div>
 
@@ -1336,6 +1339,12 @@ function recentRPE(){
   const rated=Object.values(S.completed).filter(v=>v&&v.rpe).map(v=>({d:new Date(v.date),rpe:v.rpe})).sort((a,b)=>b.d-a.d).slice(0,3);
   return rated.length>=2?rated.reduce((s,x)=>s+x.rpe,0)/rated.length:null;
 }
+// Is the body data a fresh THIS-MORNING reading (needed for a final decision)?
+function isMorningFresh(){
+  if(!bodySyncTime)return false;
+  const d=new Date(bodySyncTime),now=new Date();
+  return d.toDateString()===now.toDateString()&&d.getHours()>=4&&(now-d)<15*3600000;
+}
 // The core: reads Garmin Training Readiness (a MORNING composite of sleep, HRV,
 // recovery time, acute load, stress, body battery) — NOT raw night Body Battery.
 function computeReadiness(){
@@ -1345,9 +1354,9 @@ function computeReadiness(){
   const rec=tr&&tr.recoveryTime;
   const night=new Date().getHours()<6;
   if(score==null){
-    return{have:false,band:'unknown',score:null,adjust:'keep',
+    return{have:false,band:'unknown',score:null,adjust:'keep',provisional:true,fresh:false,
       title:'Synk for dagens justering',
-      msg:'Trykk «Oppdater» på Kropp om morgenen, så tilpasses dagens økt til Garmin Training Readiness — ikke Body Battery midt på natta.'};
+      msg:'Trykk ⟳ om morgenen, så tilpasses dagens økt til Garmin Training Readiness — ikke Body Battery midt på natta.'};
   }
   let band=score>=65?'high':score>=45?'moderate':score>=30?'low':'verylow';
   if(hrv&&hrv.toLowerCase().includes('poor')&&band==='high')band='moderate';
@@ -1369,10 +1378,27 @@ function computeReadiness(){
     low:`Training Readiness ${score} — kroppen er ikke helt klar. Volumet er kuttet ~20%. Rolig fremfor hardt.${recTxt}`,
     verylow:`Training Readiness ${score} — prioriter restitusjon i dag. Kort rolig økt eller hvil.${recTxt}`,
   };
+  const adjust=map[band];
+  let title=titles[band];
   let msg=msgs[band];
   if(overload)msg='📉 Formen (TSB) viser opphopet tretthet — jeg har dempet neste økt ekstra. '+msg;
-  if(night)msg='🌙 Dette er kveldstall — Body Battery lades opp av natta. Sjekk igjen når du våkner, så justeres økta på morgen-readiness. '+msg;
-  return{have:true,band,score,recoveryTime:rec,adjust:map[band],title:titles[band],msg,night,feedback:tr.feedback};
+  // Provisional vs. confirmed: a FINAL decision needs fresh morning data (after sleep).
+  const fresh=isMorningFresh();
+  const provisional=!fresh;
+  if(provisional){
+    if(adjust!=='push'){
+      title='🕗 Foreløpig: '+titles[band].replace(/^\S+\s/,'');
+      msg='Dette er en FORELØPIG plan basert på hvor sliten du er nå. Endelig beslutning tas i morgen tidlig — trykk ⟳ når du har sovet. Er du uthvilt (HRV/readiness ok) går vi tilbake til den originale økta; er kroppen fortsatt sliten, blir det den roligere varianten. '+msg;
+    } else {
+      title='🕗 Foreløpig grønt lys';
+      msg='Ser bra ut nå — bekreftes endelig når du synker i morgen tidlig. '+msg;
+    }
+    if(night)msg='🌙 '+msg;
+  } else {
+    title=titles[band]+' · bekreftet';
+    msg='✅ Bekreftet på ferske morgentall. '+msg;
+  }
+  return{have:true,band,score,recoveryTime:rec,adjust,title,msg,night,provisional,fresh,feedback:tr.feedback};
 }
 
 // ── RENDER HOME ───────────────────────────────────────────────────────────────
@@ -1417,7 +1443,7 @@ function render(){
     hero.style.background=`rgba(${rgb},0.08)`;
     hero.style.borderColor=`rgba(${rgb},0.25)`;
     document.getElementById('today-eyebrow').style.color=typeVar(session.type);
-    document.getElementById('today-eyebrow').textContent=session.adapted?whenTxt+' (JUSTERT)':whenTxt;
+    document.getElementById('today-eyebrow').textContent=session.adapted?whenTxt+(R.provisional?' · FORELØPIG':' (JUSTERT)'):whenTxt;
     document.getElementById('today-title').textContent=`${typeEmoji(session.type)} ${session.name}`;
     document.getElementById('today-detail').textContent=session.detail;
     const chips=[];
@@ -1484,13 +1510,14 @@ function renderUke(){
   let bannerText=R.msg;
   if(adapt.cadenceTip)bannerText+=' '+adapt.cadenceTip+'.';
   const tag=R.have?`READINESS ${R.score}`:'SYNK GARMIN';
+  const statusTag=R.provisional?'🕗 FORELØPIG — BEKREFTES ETTER SØVN':'✅ BEKREFTET I DAG';
   document.getElementById('adapt-banner').innerHTML=`
     <div class="adapt-banner" style="background:${bandBg[R.band]};border:1px solid ${bandBd[R.band]}">
-      <div class="adapt-icon">${R.band==='high'?'🟢':R.band==='moderate'?'🟡':R.band==='low'?'🟠':R.band==='verylow'?'🔴':'📲'}</div>
+      <div class="adapt-icon">${R.provisional&&R.have?'🕗':R.band==='high'?'🟢':R.band==='moderate'?'🟡':R.band==='low'?'🟠':R.band==='verylow'?'🔴':'📲'}</div>
       <div>
         <div class="adapt-title">${R.title} <span class="learn-ic" onclick="openLearn('readiness')">i</span></div>
         <div class="adapt-text">${bannerText}</div>
-        <div class="adapt-tag">${tag} · GJELDER I DAG</div>
+        <div class="adapt-tag">${tag} · ${statusTag}</div>
       </div>
     </div>`;
 
@@ -1688,8 +1715,27 @@ function renderWeekReport(){
     <div class="coach-sub">${f?`Form (TSB) ${f.tsb>0?'+':''}${f.tsb} · `:''}${rAvg?`Snitt RPE ${Math.round(rAvg*10)/10} · `:''}Gjennomføring ${d.compliance!=null?d.compliance+'%':'—'}</div>
     <div class="coach-actions"><div class="coach-action"><span>🎯</span><span>${focus}</span></div></div>`;
 }
+function renderProgression(){
+  const el=document.getElementById('an-progression');if(!el)return;
+  const spark=(pts,color)=>{if(pts.length<2)return'';const W=110,H=26;const min=Math.min(...pts),max=Math.max(...pts),rng=(max-min)||1;const xs=i=>i*W/(pts.length-1);const ys=v=>H-2-((v-min)/rng)*(H-4);return`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="flex-shrink:0"><polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" points="${pts.map((v,i)=>xs(i)+','+ys(v)).join(' ')}"/></svg>`;};
+  const byDate=t=>GARMIN_ACTS.filter(t).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const rows=[];
+  const runs=byDate(a=>a.type==='run'&&a.pace&&(+a.km)>=2);
+  if(runs.length>=2){const p=runs.map(a=>paceToSec(a.pace));rows.push({label:'🏊 → 🏃 Løpefart',val:fmtPaceSec(p[p.length-1])+'/km',better:p[p.length-1]<p[0],note:p[p.length-1]<p[0]?'raskere':'tregere',color:'var(--run)',pts:p.map(v=>-v)});}
+  const bikes=byDate(a=>a.type==='bike'&&(+a.km)>=8&&a.time);
+  if(bikes.length>=2){const s=bikes.map(a=>a.km/(timeToMin(a.time)/60));rows.push({label:'🚴 Sykkelfart',val:(Math.round(s[s.length-1]*10)/10)+' km/t',better:s[s.length-1]>s[0],note:s[s.length-1]>s[0]?'raskere':'tregere',color:'var(--bike)',pts:s});}
+  const bp=bikes.filter(a=>a.power).map(a=>a.power);
+  if(bp.length>=2)rows.push({label:'🚴 Sykkeleffekt',val:bp[bp.length-1]+' W',better:bp[bp.length-1]>bp[0],note:bp[bp.length-1]>bp[0]?'sterkere':'lavere',color:'var(--brick)',pts:bp});
+  const swims=byDate(a=>a.type==='swim'&&(+a.km)>=0.4&&a.time);
+  if(swims.length>=2){const s=swims.map(a=>(timeToMin(a.time)*60)/(a.km*10));rows.push({label:'🏊 Svømmefart',val:fmtPaceSec(s[s.length-1])+'/100m',better:s[s.length-1]<s[0],note:s[s.length-1]<s[0]?'raskere':'tregere',color:'var(--swim)',pts:s.map(v=>-v)});}
+  if(!rows.length){el.innerHTML='<div style="font-size:12px;color:var(--muted2)">Trenger minst 2 økter per gren for å vise progresjon. Kommer etter hvert som du logger.</div>';return;}
+  el.innerHTML=rows.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--surface2)">
+    <div style="flex:1"><div style="font-size:12px;font-weight:700">${r.label}</div><div style="font-size:11px;color:var(--muted2)">${r.val} · <span style="color:${r.better?'var(--run)':'var(--bike)'};font-weight:700">${r.better?'↑':'↓'} ${r.note}</span></div></div>
+    ${spark(r.pts,r.color)}</div>`).join('');
+}
 function renderAnalysis(){
   try{renderWeekReport();}catch(e){console.warn('weekreport',e);}
+  try{renderProgression();}catch(e){console.warn('progression',e);}
   try{renderVerdicts();}catch(e){console.warn('verdicts',e);}
   try{renderMilestones();}catch(e){console.warn('milestones',e);}
   const a=analyzeTraining();
@@ -1927,6 +1973,23 @@ function avgBikeSpeed(){
   let km=0,h=0;rides.forEach(a=>{km+=+a.km;h+=timeToMin(a.time)/60;});
   return h>0?km/h:null;
 }
+// "What if my bike were faster" — total finish time as a function of bike speed
+function whatIfTime(kmh){
+  const A=computeAthlete();
+  const swimSec=RACE.swimKm*10*125, t1=6*60, t2=4*60;
+  const bikeSec=RACE.bikeKm/kmh*3600;
+  const imPace=(A.paces.imRace[0]+A.paces.imRace[1])/2;
+  const runSec=RACE.runKm*imPace;
+  return swimSec+t1+bikeSec+t2+runSec;
+}
+function updateWhatIf(kmh){
+  kmh=+kmh;
+  const base=avgBikeSpeed()?Math.max(20,Math.min(36,avgBikeSpeed())):29;
+  const t=whatIfTime(kmh),bt=whatIfTime(base),diff=Math.round(bt-t);
+  const kEl=document.getElementById('whatif-kmh');if(kEl)kEl.textContent=kmh+' km/t';
+  const oEl=document.getElementById('whatif-out');
+  if(oEl)oEl.innerHTML=`Estimert sluttid: <b style="color:var(--race)">${fmtClock(t)}</b> `+(diff>60?`<span style="color:var(--run);font-weight:800">− ${fmtClock(diff)} raskere enn i dag 🚀</span>`:diff<-60?`<span style="color:var(--muted2)">+ ${fmtClock(Math.abs(diff))} tregere</span>`:`<span style="color:var(--muted2)">≈ som i dag</span>`);
+}
 // Confidence-to-finish: 0-100 from the pillars that actually decide an Ironman
 function computeConfidence(){
   const longest=t=>Math.max(0,...GARMIN_ACTS.filter(a=>a.type===t||(t==='bike'&&a.type==='brick')).map(a=>a.km));
@@ -2006,6 +2069,13 @@ function renderRaceDay(){
       </div>
       <div class="fuel-note">Test nøyaktig denne strategien på langturene dine nå. Magen må trenes like mye som beina. Start fueling tidlig på sykkelen — ikke vent til du er tom.</div>
     </div>
+    <div class="section-title">HVA OM SYKKELEN VAR RASKERE? ${learnIc('power')}</div>
+    <div class="an-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:12px;color:var(--muted2)">Sykkelfart</span><span id="whatif-kmh" style="font-weight:800;color:var(--bike)">${bikeKmh} km/t</span></div>
+      <input type="range" min="${Math.round(bikeKmh)}" max="38" value="${Math.round(bikeKmh)}" step="1" oninput="updateWhatIf(this.value)" style="width:100%;accent-color:var(--accent)">
+      <div id="whatif-out" style="font-size:14px;margin-top:12px"></div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:8px">Svøm og løp holdes likt — kun sykkelfarten endres. En lettere sykkel (eller mer sykkeltrening) flytter deg oppover skalaen.</div>
+    </div>
     <div class="section-title">SISTE UKE</div>
     <div class="an-card" style="margin-bottom:24px">
       <div class="coach-action" style="margin-bottom:8px"><span>🛏️</span><span>Sov ekstra 2–3 netter før — søvnen natt til før betyr mindre enn du tror.</span></div>
@@ -2013,6 +2083,7 @@ function renderRaceDay(){
       <div class="coach-action" style="margin-bottom:8px"><span>🔧</span><span>Service sykkel, sjekk dekk/bremser, legg ut depotbager kvelden før.</span></div>
       <div class="coach-action"><span>🧠</span><span>Del dagen i fire: svøm, sykkel, løp, skifter. Tenk kun på den delen du er i.</span></div>
     </div>`;
+  try{updateWhatIf(bikeKmh);}catch(e){}
 }
 
 // ── LEARN CARDS ─────────────────────────────────────────────────────────────────
@@ -2498,7 +2569,9 @@ try{
   try{sanitizeState();}catch(e){console.warn('sanitize',e);}
   save();
   try{autoCompleteFromGarmin();}catch(e){console.warn('autocomplete',e);}
-  if(!bodySyncTime||Date.now()-new Date(bodySyncTime)>4*3600000){setTimeout(()=>{try{syncBodyData();}catch(e){}},1500);}
+  // Auto-sync on open if data is stale (>3h), and again whenever the app regains focus (>2h)
+  if(!bodySyncTime||Date.now()-new Date(bodySyncTime)>3*3600000){setTimeout(()=>{try{syncAll();}catch(e){}},1200);}
+  if(typeof document!=='undefined'&&document.addEventListener)document.addEventListener('visibilitychange',function(){try{if(document.visibilityState==='visible'&&(!bodySyncTime||Date.now()-new Date(bodySyncTime)>2*3600000))syncAll();}catch(e){}});
   render();
   renderBodyData();
   try{['days-to-race','ring-swim-val','ring-bike-val','ring-run-val'].forEach(id=>{const el=document.getElementById(id);if(el){const v=parseFloat(el.textContent);if(!isNaN(v))animateCount(el,v,1000);}});}catch(e){}
