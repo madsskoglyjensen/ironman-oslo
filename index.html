@@ -404,6 +404,14 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
 .ms-name{font-size:11px;font-weight:800;margin-top:6px;line-height:1.2}
 .ms-sub{font-size:10px;color:var(--muted2);margin-top:3px}
 .ms-check{position:absolute;top:8px;right:10px;color:var(--run);font-size:12px;font-weight:900}
+
+/* GLOBAL SYNC BUTTON (on every page) */
+#global-sync{position:fixed;right:16px;bottom:calc(88px + env(safe-area-inset-bottom));z-index:60;width:48px;height:48px;border-radius:50%;border:1px solid rgba(255,255,255,0.1);background:linear-gradient(160deg,rgba(255,122,26,0.95),rgba(255,90,0,0.95));color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px -8px rgba(255,122,26,0.6);cursor:pointer;transition:transform .15s}
+#global-sync:active{transform:scale(0.9)}
+#global-sync.syncing{animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(16px);background:var(--surface3);color:var(--text);padding:12px 18px;border-radius:14px;font-size:13px;font-weight:700;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:200;max-width:82%;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
@@ -691,6 +699,9 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
   <div class="nav-item" onclick="showPage('mer')" id="nav-mer"><div class="nav-icon">📊</div><div class="nav-label">ANALYSE</div></div>
   <div class="nav-item" onclick="showPage('race')" id="nav-race"><div class="nav-icon">🏁</div><div class="nav-label">RACE</div></div>
 </div>
+
+<!-- GLOBAL SYNC (on every page) -->
+<button id="global-sync" onclick="syncAll()" title="Synk Garmin">⟳</button>
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modal" onclick="closeModalBg(event)">
@@ -1909,6 +1920,13 @@ function renderMilestones(){
 }
 
 // ── RACE-DAY PLAN ───────────────────────────────────────────────────────────────
+// Your real average cycling speed from Garmin rides (so estimates match your actual bike)
+function avgBikeSpeed(){
+  const rides=GARMIN_ACTS.filter(a=>a.type==='bike'&&(+a.km)>=10&&a.time);
+  if(!rides.length)return null;
+  let km=0,h=0;rides.forEach(a=>{km+=+a.km;h+=timeToMin(a.time)/60;});
+  return h>0?km/h:null;
+}
 // Confidence-to-finish: 0-100 from the pillars that actually decide an Ironman
 function computeConfidence(){
   const longest=t=>Math.max(0,...GARMIN_ACTS.filter(a=>a.type===t||(t==='bike'&&a.type==='brick')).map(a=>a.km));
@@ -1936,7 +1954,8 @@ function renderRaceDay(){
   const swimSecPer100=125;                        // ~2:05/100m, developing OW swimmer
   const swimSec=RACE.swimKm*10*swimSecPer100;
   const t1=6*60,t2=4*60;
-  const bikeKmh=29;                               // steady endurance
+  const realKmh=avgBikeSpeed();                   // YOUR actual Garmin cycling speed
+  const bikeKmh=realKmh?Math.max(20,Math.min(36,Math.round(realKmh*10)/10)):29;
   const bikeSec=RACE.bikeKm/bikeKmh*3600;
   const imPace=(A.paces.imRace[0]+A.paces.imRace[1])/2;
   const runSec=RACE.runKm*imPace;
@@ -1969,7 +1988,7 @@ function renderRaceDay(){
       <div class="rd-leg-info"><div class="rd-leg-name">Svøm · 3,8 km</div><div class="rd-leg-meta">Rolig og jevnt, ~2:05/100m. Puls sone 1. Ikke gå ut for hardt — spar kreftene.</div></div>
       <div class="rd-leg-time" style="color:var(--swim)">${fmtClock(swimSec)}</div></div>
     <div class="rd-leg"><div class="rd-leg-ic" style="background:rgba(255,122,26,.14)">🚴</div>
-      <div class="rd-leg-info"><div class="rd-leg-name">Sykkel · 180 km</div><div class="rd-leg-meta">Hold ~${bikeKmh} km/t i sone ${1}–2 (${zoneBike.lo}–${zoneBike.hi} bpm). Spis og drikk hvert 20. min. Her legges grunnlaget for løpet.</div></div>
+      <div class="rd-leg-info"><div class="rd-leg-name">Sykkel · 180 km</div><div class="rd-leg-meta">Hold ~${bikeKmh} km/t i sone 1–2 (${zoneBike.lo}–${zoneBike.hi} bpm)${realKmh?' — basert på din faktiske snittfart':''}. Spis/drikk hvert 20. min. Her legges grunnlaget for løpet.${realKmh&&realKmh<26?' (En lettere sykkel vil kutte tid her.)':''}</div></div>
       <div class="rd-leg-time" style="color:var(--bike)">${fmtClock(bikeSec)}</div></div>
     <div class="rd-leg"><div class="rd-leg-ic" style="background:rgba(37,211,102,.14)">🏃</div>
       <div class="rd-leg-info"><div class="rd-leg-name">Løp · 42,2 km</div><div class="rd-leg-meta">Mål ${fmtPaceSec(A.paces.imRace[0])}–${fmtPaceSec(A.paces.imRace[1])}/km. Start rolig — det føles for lett de første 10 km. Det er meningen.</div></div>
@@ -2257,6 +2276,32 @@ function openGarminDetail(idx){
 }
 function closeGarminModal(e){if(e.target===document.getElementById('garmin-modal'))document.getElementById('garmin-modal').classList.remove('open');}
 
+// ── GLOBAL SYNC (available on every page via the floating ⟳ button) ─────────────
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}
+  t.textContent=msg;t.className='toast show';
+  clearTimeout(t._to);t._to=setTimeout(()=>{t.className='toast';},2800);
+}
+let _syncing=false;
+async function syncAll(){
+  if(_syncing)return;_syncing=true;
+  const btn=document.getElementById('global-sync');if(btn)btn.classList.add('syncing');
+  let okA=false,okB=false;
+  const getActs=(async()=>{try{const r=await fetch('/api/garmin',{signal:AbortSignal.timeout(15000)});const tx=await r.text();if(r.ok&&tx.trim().startsWith('{')){const d=JSON.parse(tx);if(d.activities&&d.activities.length){GARMIN_ACTS=filterActs(d.activities);garminSyncTime=new Date().toISOString();localStorage.setItem('garmin_acts',JSON.stringify(GARMIN_ACTS));localStorage.setItem('garmin_sync_time',garminSyncTime);okA=true;}}}catch(e){}})();
+  const getBody=(async()=>{try{const r=await fetch('/api/garmin?type=body',{signal:AbortSignal.timeout(18000)});const tx=await r.text();if(r.ok&&tx.trim().startsWith('{')){BODY_DATA=JSON.parse(tx);bodySyncTime=new Date().toISOString();localStorage.setItem('garmin_body',JSON.stringify(BODY_DATA));localStorage.setItem('garmin_body_time',bodySyncTime);okB=true;}}catch(e){}})();
+  await Promise.all([getActs,getBody]);
+  try{autoCompleteFromGarmin();}catch(e){}
+  try{render();}catch(e){}
+  try{renderBodyData();}catch(e){}
+  try{renderGarmin();}catch(e){}
+  if(btn)btn.classList.remove('syncing');
+  _syncing=false;
+  if(okA||okB){
+    let extra='';try{const R=computeReadiness();if(R.have)extra=' · '+R.title;}catch(e){}
+    toast('✓ Oppdatert med ferske Garmin-tall'+extra);
+  }else toast('Kunne ikke synke — sjekk nett/innlogging');
+}
 async function syncGarmin(){
   const btn=document.getElementById('garmin-sync-btn');
   btn.textContent='⟳ Henter...';btn.classList.add('syncing');
