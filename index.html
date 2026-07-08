@@ -909,6 +909,28 @@ function mkPlan(){
 }
 const PLAN = mkPlan();
 
+// Structured strength workouts (triathlete-focused: injury prevention + economy)
+const STRENGTH={
+  legcore:{name:'Bein + kjerne',ex:[
+    {n:'Knebøy',s:'3 × 8–10',note:'Tung og kontrollert. Lår til vannrett.'},
+    {n:'Rumensk markløft (RDL)',s:'3 × 10',note:'Rett rygg, kjenn baksiden av låret.'},
+    {n:'Gående utfall',s:'3 × 10/bein',note:'Langt steg, kne over ankel.'},
+    {n:'Stående tåhev',s:'3 × 15',note:'Sterke ankler = bedre løpsøkonomi.'},
+    {n:'Planke',s:'3 × 45 sek',note:'Rett kropp, stram kjerne.'},
+    {n:'Sideplanke',s:'3 × 30 sek/side',note:'Hofta opp, hold rolig.'},
+  ]},
+  fullbody:{name:'Helkropp',ex:[
+    {n:'Goblet knebøy',s:'3 × 10',note:'Rolig ned, eksplosivt opp.'},
+    {n:'Markløft',s:'3 × 6–8',note:'Tung. Nøytral rygg hele veien.'},
+    {n:'Push-ups',s:'3 × maks',note:'Bryst nesten i gulvet.'},
+    {n:'Ettarms roing (manual)',s:'3 × 10/arm',note:'Bygger svømmetrekket.'},
+    {n:'Step-ups (kasse)',s:'3 × 10/bein',note:'Press gjennom hele foten.'},
+    {n:'Bird-dog',s:'3 × 10/side',note:'Kjernestabilitet, rolig og kontrollert.'},
+  ]},
+};
+// Tag each strength session in the plan with its template
+try{PLAN.forEach(wk=>wk.forEach(day=>{[day,day&&day.second].forEach(s=>{if(s&&s.type==='strength')s.sw=/bein|kjerne/.test(s.detail||'')?'legcore':'fullbody';});}));}catch(e){}
+
 // Session enumeration helpers. Each session keeps a stable template key (w{w}d{td}[_2]).
 // x.td = template weekday, x.d = EFFECTIVE weekday (may differ if the user moved it).
 function effDayOf(key,td){return (S.assign&&S.assign[key]!=null)?S.assign[key]:td;}
@@ -1728,6 +1750,13 @@ function renderProgression(){
   if(bp.length>=2)rows.push({label:'🚴 Sykkeleffekt',val:bp[bp.length-1]+' W',better:bp[bp.length-1]>bp[0],note:bp[bp.length-1]>bp[0]?'sterkere':'lavere',color:'var(--brick)',pts:bp});
   const swims=byDate(a=>a.type==='swim'&&(+a.km)>=0.4&&a.time);
   if(swims.length>=2){const s=swims.map(a=>(timeToMin(a.time)*60)/(a.km*10));rows.push({label:'🏊 Svømmefart',val:fmtPaceSec(s[s.length-1])+'/100m',better:s[s.length-1]<s[0],note:s[s.length-1]<s[0]?'raskere':'tregere',color:'var(--swim)',pts:s.map(v=>-v)});}
+  // Strength: key lift per template over logged sessions
+  ['legcore','fullbody'].forEach(sw=>{
+    const sess=Object.entries(S.completed).filter(([k,v])=>v.strength&&sessFromKey(k)&&sessFromKey(k).type==='strength'&&sessFromKey(k).sw===sw).map(([k,v])=>v).sort((a,b)=>new Date(a.date)-new Date(b.date));
+    const idx=sw==='legcore'?0:1;const label=sw==='legcore'?'💪 Knebøy':'💪 Markløft';
+    const pts=sess.map(v=>v.strength[idx]&&v.strength[idx].w).filter(v=>v!=null).map(Number);
+    if(pts.length>=2)rows.push({label,val:pts[pts.length-1]+' kg',better:pts[pts.length-1]>pts[0],note:pts[pts.length-1]>pts[0]?'sterkere':'lavere',color:'var(--gold)',pts});
+  });
   if(!rows.length){el.innerHTML='<div style="font-size:12px;color:var(--muted2)">Trenger minst 2 økter per gren for å vise progresjon. Kommer etter hvert som du logger.</div>';return;}
   el.innerHTML=rows.map(r=>`<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--surface2)">
     <div style="flex:1"><div style="font-size:12px;font-weight:700">${r.label}</div><div style="font-size:11px;color:var(--muted2)">${r.val} · <span style="color:${r.better?'var(--run)':'var(--bike)'};font-weight:700">${r.better?'↑':'↓'} ${r.note}</span></div></div>
@@ -2120,6 +2149,39 @@ function animateCount(el,to,dur){
   requestAnimationFrame(step);
 }
 
+// ── SESSION EXECUTION BREAKDOWN (how to actually do the session) ────────────────
+function sessionBreakdown(d){
+  if(!d)return null;const det=((d.detail||'')+' '+(d.name||'')).toLowerCase();const t=d.type;const rows=[];
+  if(t==='run'){
+    if(det.includes('intervall')){rows.push(['Oppvarming','12 min rolig (sone 2) + 4 stigningsløp á 20 sek.']);rows.push(['Hoveddel','8×2 min i sone 4–5 (hardt men jevnt), 1 min lett jogg mellom.']);rows.push(['Nedjogging','8–10 min veldig rolig.']);}
+    else if(det.includes('tempo')){rows.push(['Oppvarming','15 min rolig, stigende fart.']);rows.push(['Hoveddel','20 min sammenhengende i terskeltempo (sone 4). Jevnt, kontrollert hardt.']);rows.push(['Nedjogging','10 min rolig.']);}
+    else if(det.includes('lang')){rows.push(['Gjennomføring','Jevnt i sone 2 hele veien. Snakketempo — det skal føles lett.']);rows.push(['Ernæring','Gel + drikke hvert 30–40 min. Øv på race-fueling.']);rows.push(['Siste del','Siste 10–15 min litt kvikkere hvis du har overskudd.']);}
+    else {rows.push(['Gjennomføring','Rolig sone 2, avslappet. Dette bygger den aerobe motoren.']);rows.push(['Fokus','Kadens 174–180 steg/min, lett fotisett.']);}
+  } else if(t==='bike'){
+    if(det.includes('intervall')||det.includes('drag')||det.includes('hard')||det.includes('×')){rows.push(['Oppvarming','15 min stigende + 3×30 sek fart.']);rows.push(['Hoveddel','4–5×4 min over racefart (sone 4), 4 min lett mellom.']);rows.push(['Nedtråkk','10 min lett spinning.']);}
+    else if(det.includes('lang')){rows.push(['Gjennomføring','Sone 2, jevn kadens 85–95. Sitt stille i sadelen.']);rows.push(['Ernæring','Spis/drikk hvert 20. min — mageøvelse er like viktig som beina.']);rows.push(['Toppuker','Kjør siste time på racefart for å simulere.']);}
+    else {rows.push(['Gjennomføring','Rolig sone 2, jevn tråkkfrekvens 85–95.']);rows.push(['Fokus','Avslappede skuldre, rund tråkkbevegelse.']);}
+  } else if(t==='swim'){
+    if(det.includes('open')||det.includes('åpent')){rows.push(['Oppvarming','300 m rolig — bli komfortabel i vannet.']);rows.push(['Hoveddel','Svøm langs land i rolig tempo. Orienter deg framover hvert 6.–8. tak.']);rows.push(['Trygghet','Hold deg nær land. Rolig, dyp pust — panikk kommer av stress, ikke form.']);}
+    else {rows.push(['Oppvarming','300 m rolig + 4×50 m teknikk (drag/spising).']);rows.push(['Hoveddel',(d.km[0]?Math.round(d.km[0]*1000)+' m':'Hoveddistanse')+' jevn kraul. Tell tak (SWOLF), lang armføring.']);rows.push(['Nedsvøm','200 m veldig lett.']);}
+  } else if(t==='brick'){
+    rows.push(['Sykkel',(d.km[1]||'')+' km på IM-racefart (sone 2). Siste 10 min: bygg opp kadensen.']);
+    rows.push(['Skift (T2)','Rask overgang — ha løpesko klare. Øv på dette, det teller på race.']);
+    rows.push(['Løp',(d.km[2]||'')+' km. De første km kjennes tunge/rare — hold igjen, det slipper etter ~1 km.']);
+  } else if(t==='race'){
+    rows.push(['Svøm 3,8 km','Rolig og jevnt, spar kreftene. Ikke gå ut for hardt.']);
+    rows.push(['Sykkel 180 km','Jevnt på watt/sone 2. Spis hele veien — her vinnes eller tapes løpet.']);
+    rows.push(['Løp 42,2 km','Start rolig — det skal føles for lett de første 10 km. Én kilometer av gangen.']);
+  }
+  return rows.length?rows:null;
+}
+// Most recent logged numbers for a strength template (for progression reference)
+function lastStrength(sw,exceptKey){
+  const e=Object.entries(S.completed).filter(([k,v])=>k!==exceptKey&&v&&v.strength&&sessFromKey(k)&&sessFromKey(k).type==='strength'&&sessFromKey(k).sw===sw).sort((a,b)=>new Date(b[1].date)-new Date(a[1].date));
+  return e.length?e[0][1].strength:null;
+}
+let _activeStrength=null;
+
 // ── MODAL ─────────────────────────────────────────────────────────────────────
 function openWorkout(week,i,which){
   which=which||'';
@@ -2136,6 +2198,22 @@ function openWorkout(week,i,which){
   document.getElementById('m-sub').textContent=d.detail+(d.dur!=='—'?' · '+d.dur:'');
   let bodyHtml=d.desc?`<div class="workout-block"><h4>OM ØKTEN</h4><p>${d.desc}</p></div>`:'';
   if(d.adapted)bodyHtml=`<div class="workout-block" style="border:1px solid rgba(255,106,0,0.3)"><h4>⚡ JUSTERT AV ADAPTIV PLAN</h4><p>Originalt: ${raw.detail}. Justert basert på kropp-signaler.</p></div>`+bodyHtml;
+  // How-to-execute breakdown (all disciplines)
+  const bd=sessionBreakdown(d);
+  if(bd)bodyHtml+=`<div class="workout-block"><h4>🧭 SLIK GJENNOMFØRER DU</h4>${bd.map(([k,v])=>`<div style="display:flex;gap:10px;padding:5px 0"><div style="font-size:11px;font-weight:800;color:var(--muted2);width:92px;flex-shrink:0">${k.toUpperCase()}</div><div style="font-size:13px;line-height:1.5">${v}</div></div>`).join('')}</div>`;
+  // Structured strength workout with logging
+  _activeStrength=(d.type==='strength'&&d.sw&&STRENGTH[d.sw])?d.sw:null;
+  if(_activeStrength){
+    const tmpl=STRENGTH[_activeStrength];const prev=lastStrength(_activeStrength,key);const cur=(doneRec&&doneRec.strength)||[];
+    bodyHtml+=`<div class="workout-block"><h4>💪 ${tmpl.name.toUpperCase()} — ${tmpl.ex.length} ØVELSER</h4>
+      <div style="font-size:11px;color:var(--muted2);margin-bottom:8px">Skriv inn topp-settet (kg × reps) for å følge progresjon. «Sist» viser forrige gang — prøv å slå det.</div>
+      ${tmpl.ex.map((e,idx)=>{const p=prev&&prev[idx];const c=cur[idx]||{};return `<div style="padding:9px 0;border-bottom:1px solid var(--surface2)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><div style="font-size:14px;font-weight:700">${e.n}</div><div style="font-size:11px;color:var(--accent);font-weight:700">${e.s}</div></div>
+        <div style="font-size:11px;color:var(--muted2);margin:2px 0 6px">${e.note}${p&&(p.w||p.r)?` · <span style="color:var(--swim)">sist: ${p.w||'–'} kg × ${p.r||'–'}</span>`:''}</div>
+        <div style="display:flex;gap:8px"><input type="number" inputmode="decimal" placeholder="kg" value="${c.w!=null?c.w:''}" id="str-w-${idx}" style="width:72px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px;color:var(--text);font-size:14px"><input type="number" inputmode="numeric" placeholder="reps" value="${c.r!=null?c.r:''}" id="str-r-${idx}" style="width:72px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:9px;color:var(--text);font-size:14px"></div>
+      </div>`;}).join('')}
+    </div>`;
+  }
   // Personal targets block
   let tgt=null;try{tgt=getSessionTargets(d);}catch(e){console.warn('targets',e);}
   if(tgt){
@@ -2208,9 +2286,22 @@ function openTodayWorkout(){
 }
 function rateStar(n){S.pendingRating=n;document.querySelectorAll('#stars .star').forEach((s,i)=>s.classList.toggle('active',i<n));}
 function setRpe(n){S.pendingRpe=n;document.querySelectorAll('#m-rpe-row .rpe-btn').forEach((b,i)=>b.classList.toggle('active',i+1===n));}
-function completeWorkout(){if(!activeKey)return;const prev=S.completed[activeKey]||{};const noteEl=document.getElementById('m-note');const note=noteEl?noteEl.value.trim():(prev.note||'');S.completed[activeKey]={...prev,star:S.pendingRating||prev.star||null,rpe:S.pendingRpe||prev.rpe||null,note:note,date:prev.date||new Date().toISOString()};if(S.dismissed)delete S.dismissed[activeKey];save();closeModal();render();}
+function completeWorkout(){
+  if(!activeKey)return;
+  const prev=S.completed[activeKey]||{};
+  const noteEl=document.getElementById('m-note');const note=noteEl?noteEl.value.trim():(prev.note||'');
+  const rec={...prev,star:S.pendingRating||prev.star||null,rpe:S.pendingRpe||prev.rpe||null,note:note,date:prev.date||new Date().toISOString()};
+  if(_activeStrength&&STRENGTH[_activeStrength]){
+    const n=STRENGTH[_activeStrength].ex.length;const arr=[];
+    for(let idx=0;idx<n;idx++){const wEl=document.getElementById('str-w-'+idx),rEl=document.getElementById('str-r-'+idx);const w=wEl?parseFloat(wEl.value):NaN,r=rEl?parseInt(rEl.value):NaN;arr.push({w:isNaN(w)?null:w,r:isNaN(r)?null:r});}
+    if(arr.some(x=>x.w!=null||x.r!=null))rec.strength=arr;
+  }
+  S.completed[activeKey]=rec;
+  if(S.dismissed)delete S.dismissed[activeKey];
+  save();closeModal();render();
+}
 function uncompleteWorkout(){if(!activeKey)return;delete S.completed[activeKey];S.dismissed=S.dismissed||{};S.dismissed[activeKey]=true;save();closeModal();render();}
-function closeModal(){document.getElementById('modal').classList.remove('open');activeKey=null;}
+function closeModal(){document.getElementById('modal').classList.remove('open');activeKey=null;_activeStrength=null;}
 function closeModalBg(e){if(e.target===document.getElementById('modal'))closeModal();}
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
