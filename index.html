@@ -572,6 +572,10 @@ body{background:#0c0a09;background-image:radial-gradient(1100px 620px at 50% -12
     <div id="kropp-sync-time" style="font-size:10px;color:var(--muted)">Laster...</div>
     <button class="garmin-sync-btn" onclick="syncBodyData()" id="kropp-sync-btn">⟳ Oppdater</button>
   </div>
+  <div style="display:flex;gap:8px;margin:0 20px 14px">
+    <button class="modal-btn secondary" style="flex:1;margin:0" onclick="openMobility()">🧘 Tøying & mobilitet</button>
+    <button class="modal-btn secondary" style="flex:1;margin:0" onclick="openDrills()">🎯 Drills-bibliotek</button>
+  </div>
   <div class="kropp-big" id="kropp-bb-card">
     <div class="kropp-ring-wrap">
       <svg width="90" height="90" viewBox="0 0 90 90">
@@ -1552,8 +1556,9 @@ function renderUke(){
     const hasReal=ds.some(x=>x.s.type!=='rest');
     if(hasReal)ds=ds.filter(x=>x.s.type!=='rest');
     if(ds.length===0){
-      const el=document.createElement('div');el.className='day-card';
-      el.innerHTML=`<div class="day-icon rest">😴</div><div class="day-info"><div class="day-name">${days[i]}${isTodayWD(w,i)?' <span style="color:var(--accent)">· i dag</span>':''} · Hvile</div><div class="day-detail">Restitusjon</div></div><span class="day-tag rest">—</span>`;
+      const el=document.createElement('div');el.className='day-card tappable';
+      el.innerHTML=`<div class="day-icon rest">🧘</div><div class="day-info"><div class="day-name">${days[i]}${isTodayWD(w,i)?' <span style="color:var(--accent)">· i dag</span>':''} · Hvile</div><div class="day-detail">Restitusjon · trykk for tøying & mobilitet</div></div><span class="day-tag rest">—</span>`;
+      el.onclick=()=>openMobility();
       dl.appendChild(el);continue;
     }
     ds.forEach(x=>{
@@ -2134,6 +2139,7 @@ const LEARN={
   rpe:['RPE — opplevd anstrengelse','Din egen vurdering av hvor hardt økta føltes, 1 (veldig lett) til 10 (maksimalt). Kombinert med Garmin-tallene fanger RPE det klokka ikke ser: dårlig dag, stress, søvn. Flere harde RPE-økter på rad = appen demper neste økt for å beskytte deg.'],
   trends:['Utvikling over tid','Hver gang du synker lagres et øyeblikksbilde av søvn, readiness, HRV, hvilepuls og VO2max. Over uker ser du trenden: stiger VO2max og HRV mens hvilepulsen synker, bygger du form riktig. Faller HRV og readiness over tid, er det tidlig varsel om at du tar for hardt i.'],
   power:['Effekt (watt)','Watt måler faktisk kraft — mer presist enn puls fordi det ikke påvirkes av søvn, varme eller stress. På sykkel styrer du etter watt; Normalized Power (NP) vekter for variasjon og viser reell belastning. På løp gir løpeeffekt samme fordel. Perfekt for jevn pacing på lange IM-økter.'],
+  drills:['Teknikk-drills','Korte øvelser som isolerer og forbedrer teknikken din. God teknikk = mer fart på mindre krefter — spesielt i svømming, hvor teknikk betyr mer enn form. Gjør 2–3 drills i oppvarmingen hver økt. Se hele biblioteket på Kropp-siden.'],
 };
 function learnIc(key){return LEARN[key]?`<span class="learn-ic" onclick="openLearn('${key}');event.stopPropagation();">i</span>`:'';}
 function openLearn(key){
@@ -2149,6 +2155,58 @@ function animateCount(el,to,dur){
   requestAnimationFrame(step);
 }
 
+// ── DRILLS + MOBILITY ───────────────────────────────────────────────────────────
+const DRILLS={
+  swim:[
+    ['Catch-up','Én arm venter til den andre er ferdig — lang, effektiv armføring.'],
+    ['Fingertip drag','Dra fingertuppene langs vannoverflaten i framføringen — høy albue.'],
+    ['Enarms-svømming','Svøm med én arm, den andre langs siden — kjenn taket og rotasjonen.'],
+    ['Sculling','Kort "skru"-bevegelse med hendene foran hodet — føl vanngrepet.'],
+    ['Beinspark m/brett','Rett kropp, spark fra hofta, myke ankler — 4×25 m.'],
+    ['3-3-3','3 tak enarm venstre, 3 høyre, 3 helt — teknikk under fart.'],
+  ],
+  bike:[
+    ['Enbeins-tråkk','30 sek per bein — jevn, rund bevegelse uten "dødpunkt" på toppen.'],
+    ['Spin-ups','Øk kadens til 110+ i 1 min uten å hoppe i sadelen.'],
+    ['Høy kadens','5 min på 95–100 RPM — lær beina å gå fort og økonomisk.'],
+    ['Stående kraftdrag','1 min stående i lett motbakke — bygg kraft.'],
+    ['Aeroposisjon','Hold aeroposisjon 5 min sammenhengende — venn kroppen til racestilling.'],
+  ],
+  run:[
+    ['A-skip','Høye kne, aktiv fot ned — 2×20 m. Bedre kadens og fotisett.'],
+    ['Butt kicks','Hælene mot setet, rask frekvens — 2×20 m.'],
+    ['Stigningsløp','4–6×20 sek gradvis opp til nesten full fart, full pause.'],
+    ['Høy kadens','1 min med korte, raske steg (mål 178–180 spm).'],
+    ['Bakkedrag','4×20 sek i motbakke — kraft og løpsform.'],
+  ],
+};
+function pickDrills(type,n){const arr=DRILLS[type]||[];if(!arr.length)return[];const day=new Date().getDate();const out=[];for(let i=0;i<Math.min(n,arr.length);i++)out.push(arr[(day+i)%arr.length]);return out;}
+const MOBILITY=[
+  ['Hoftebøyer-strekk','30 sek/side — utfallstilling, press hofta rolig fram.'],
+  ['Baklår (hamstrings)','30 sek/side — rett bein, len deg fram fra hofta.'],
+  ['Legger','30 sek/side — mot vegg, hælen i bakken.'],
+  ['Sete / pyriformis','30 sek/side — "figur 4" liggende, dra kneet inn.'],
+  ['Brystrygg-rotasjon','8×/side — åpne brystet. Viktig for svømmetaket.'],
+  ['Skulderstrekk','30 sek/side — arm over hodet, dra lett i albuen.'],
+  ['Ankelmobilitet','10×/side — kne over tå mot vegg, hælen i gulvet.'],
+  ['Katt–ku (rygg)','8 reps — myk opp ryggen, følg pusten.'],
+];
+function openMobility(){
+  const c=document.getElementById('garmin-modal-content');if(!c)return;
+  c.innerHTML=`<div style="font-size:20px;font-weight:900;margin-bottom:4px">🧘 Tøying & mobilitet</div>
+    <div style="font-size:12px;color:var(--muted2);margin-bottom:14px">10–12 min. Gjør på hviledager eller etter en økt — holder deg smidig og skadefri. Rolig pust, ikke rykk.</div>
+    ${MOBILITY.map(([n,note])=>`<div style="padding:9px 0;border-bottom:1px solid var(--surface2)"><div style="font-size:14px;font-weight:700">${n}</div><div style="font-size:12px;color:var(--muted2);margin-top:2px">${note}</div></div>`).join('')}`;
+  document.getElementById('garmin-modal').classList.add('open');
+}
+function openDrills(){
+  const c=document.getElementById('garmin-modal-content');if(!c)return;
+  const sec=(title,arr)=>`<div style="font-size:13px;font-weight:800;margin:14px 0 6px">${title}</div>${arr.map(([n,note])=>`<div style="padding:6px 0;border-bottom:1px solid var(--surface2)"><div style="font-size:13px;font-weight:700">${n}</div><div style="font-size:11px;color:var(--muted2)">${note}</div></div>`).join('')}`;
+  c.innerHTML=`<div style="font-size:20px;font-weight:900;margin-bottom:4px">🎯 Drills-bibliotek</div>
+    <div style="font-size:12px;color:var(--muted2)">Teknikkøvelser som gjør deg mer effektiv. Legg 2–3 inn i oppvarmingen.</div>
+    ${sec('🏊 Svømming',DRILLS.swim)}${sec('🚴 Sykkel',DRILLS.bike)}${sec('🏃 Løping',DRILLS.run)}`;
+  document.getElementById('garmin-modal').classList.add('open');
+}
+
 // ── SESSION EXECUTION BREAKDOWN (how to actually do the session) ────────────────
 function sessionBreakdown(d){
   if(!d)return null;const det=((d.detail||'')+' '+(d.name||'')).toLowerCase();const t=d.type;const rows=[];
@@ -2162,8 +2220,22 @@ function sessionBreakdown(d){
     else if(det.includes('lang')){rows.push(['Gjennomføring','Sone 2, jevn kadens 85–95. Sitt stille i sadelen.']);rows.push(['Ernæring','Spis/drikk hvert 20. min — mageøvelse er like viktig som beina.']);rows.push(['Toppuker','Kjør siste time på racefart for å simulere.']);}
     else {rows.push(['Gjennomføring','Rolig sone 2, jevn tråkkfrekvens 85–95.']);rows.push(['Fokus','Avslappede skuldre, rund tråkkbevegelse.']);}
   } else if(t==='swim'){
-    if(det.includes('open')||det.includes('åpent')){rows.push(['Oppvarming','300 m rolig — bli komfortabel i vannet.']);rows.push(['Hoveddel','Svøm langs land i rolig tempo. Orienter deg framover hvert 6.–8. tak.']);rows.push(['Trygghet','Hold deg nær land. Rolig, dyp pust — panikk kommer av stress, ikke form.']);}
-    else {rows.push(['Oppvarming','300 m rolig + 4×50 m teknikk (drag/spising).']);rows.push(['Hoveddel',(d.km[0]?Math.round(d.km[0]*1000)+' m':'Hoveddistanse')+' jevn kraul. Tell tak (SWOLF), lang armføring.']);rows.push(['Nedsvøm','200 m veldig lett.']);}
+    if(det.includes('open')||det.includes('åpent')){
+      rows.push(['Oppvarming','300 m rolig langs land — bli komfortabel i vannet.']);
+      rows.push(['Hoveddel',`${Math.round((d.km[0]||3)*1000)} m sammenhengende i jevnt racetempo. Orienter deg framover hvert 6.–8. tak.`]);
+      rows.push(['Trygghet','Hold deg nær land. Rolig, dyp pust — panikk kommer av stress, ikke form.']);
+    } else {
+      const totalM=Math.round((d.km[0]||2)*1000);
+      const warm=Math.max(200,Math.min(500,Math.round(totalM*0.18/50)*50));
+      const cool=Math.max(100,Math.min(300,Math.round(totalM*0.1/50)*50));
+      const drillM=Math.max(100,Math.min(200,Math.round(totalM*0.1/50)*50));
+      const mainM=Math.max(200,totalM-warm-cool-drillM);
+      let dist=mainM>=2000?400:mainM>=1200?200:100;const rep=Math.max(2,Math.round(mainM/dist));
+      rows.push(['Oppvarming',`${warm} m rolig kraul, variert tempo.`]);
+      rows.push(['Drills',`${Math.round(drillM/50)}×50 m teknikk — se drills-boksen under.`]);
+      rows.push(['Hovedsett',`${rep}×${dist} m i jevnt tempo, 15–20 sek pause mellom. Hold teknikken når du blir sliten.`]);
+      rows.push(['Nedsvøm',`${cool} m veldig lett — pust ut skuldrene.`]);
+    }
   } else if(t==='brick'){
     rows.push(['Sykkel',(d.km[1]||'')+' km på IM-racefart (sone 2). Siste 10 min: bygg opp kadensen.']);
     rows.push(['Skift (T2)','Rask overgang — ha løpesko klare. Øv på dette, det teller på race.']);
@@ -2173,6 +2245,7 @@ function sessionBreakdown(d){
     rows.push(['Sykkel 180 km','Jevnt på watt/sone 2. Spis hele veien — her vinnes eller tapes løpet.']);
     rows.push(['Løp 42,2 km','Start rolig — det skal føles for lett de første 10 km. Én kilometer av gangen.']);
   }
+  if(['run','bike','swim'].includes(t))rows.push(['Avslutt','5 min lett tøying — åpne «Tøying & mobilitet» på Kropp-siden.']);
   return rows.length?rows:null;
 }
 // Most recent logged numbers for a strength template (for progression reference)
@@ -2201,6 +2274,11 @@ function openWorkout(week,i,which){
   // How-to-execute breakdown (all disciplines)
   const bd=sessionBreakdown(d);
   if(bd)bodyHtml+=`<div class="workout-block"><h4>🧭 SLIK GJENNOMFØRER DU</h4>${bd.map(([k,v])=>`<div style="display:flex;gap:10px;padding:5px 0"><div style="font-size:11px;font-weight:800;color:var(--muted2);width:92px;flex-shrink:0">${k.toUpperCase()}</div><div style="font-size:13px;line-height:1.5">${v}</div></div>`).join('')}</div>`;
+  // Technique drills (swim/bike/run) — rotate day to day
+  if(['swim','bike','run'].includes(d.type)){
+    const dr=pickDrills(d.type,d.type==='swim'?3:2);
+    if(dr.length)bodyHtml+=`<div class="workout-block"><h4>🎯 TEKNIKK-DRILLS ${learnIc('drills')}</h4>${dr.map(([n,note])=>`<div style="padding:5px 0"><div style="font-size:13px;font-weight:700">${n}</div><div style="font-size:11px;color:var(--muted2)">${note}</div></div>`).join('')}<div style="font-size:11px;color:var(--muted2);margin-top:6px">Legg disse i oppvarmingen. Appen roterer forslagene fra gang til gang.</div></div>`;
+  }
   // Structured strength workout with logging
   _activeStrength=(d.type==='strength'&&d.sw&&STRENGTH[d.sw])?d.sw:null;
   if(_activeStrength){
