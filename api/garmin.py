@@ -271,6 +271,21 @@ def get_body_data(api):
     return result
 
 
+def get_activity_zones(api, activity_id):
+    """Real time-in-HR-zone for a single activity."""
+    zones = []
+    try:
+        raw = api.get_activity_hr_in_timezones(activity_id)
+        for z in (raw or []):
+            secs = z.get('secsInZone') or 0
+            znum = z.get('zoneNumber')
+            if znum is not None:
+                zones.append({'zone': int(znum), 'secs': int(secs)})
+    except Exception as e:
+        return {'error': str(e)}
+    return {'zones': zones}
+
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         email = os.environ.get('Garmin_EMAIL') or os.environ.get('GARMIN_EMAIL')
@@ -296,6 +311,11 @@ class handler(BaseHTTPRequestHandler):
             api = make_api()
             if data_type == 'body':
                 self._respond(200, get_body_data(api))
+            elif data_type == 'zones':
+                act_id = qs.get('id', [''])[0]
+                if not act_id:
+                    return self._respond(400, {'error': 'missing activity id'})
+                self._respond(200, get_activity_zones(api, act_id))
             else:
                 self._respond(200, {'activities': get_activities(api)})
         except Exception as e:

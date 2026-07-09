@@ -2544,6 +2544,24 @@ function estZones(avgHR){
 }
 function teDesc(te){if(!te)return'';if(te>=5)return'Overbelastende';if(te>=4)return'Sterkt forbedrende';if(te>=3)return'Forbedrer form';if(te>=2)return'Vedlikeholder';if(te>=1)return'Mindre effekt';return'Ingen effekt';}
 const ZONE_COLORS=['#3aa0ff','#25d366','#ff9f1a','#ff4d6d','#c77dff'];
+function zoneBarHTML(dist,note){
+  return `<div style="display:flex;height:26px;border-radius:8px;overflow:hidden;margin:4px 0 8px">${dist.map(z=>z.pct>0?`<div style="flex:${z.pct};background:${ZONE_COLORS[z.z-1]};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#0a0a0a">${z.pct>=12?'S'+z.z:''}</div>`:'').join('')}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted2)">${dist.map(z=>`<span><span style="color:${ZONE_COLORS[z.z-1]}">■</span> S${z.z} ${z.pct}%</span>`).join('')}</div>
+    <div style="font-size:11px;color:var(--muted2);margin-top:6px">${note}</div>`;
+}
+let _zoneCache={};
+async function fetchActivityZones(actId){
+  if(_zoneCache[actId])return _zoneCache[actId];
+  try{
+    const r=await fetch('/api/garmin?type=zones&id='+encodeURIComponent(actId),{signal:AbortSignal.timeout(12000)});
+    const tx=await r.text();
+    if(r.ok&&tx.trim().startsWith('{')){const d=JSON.parse(tx);
+      if(d.zones&&d.zones.length){const tot=d.zones.reduce((s,z)=>s+(z.secs||0),0)||1;
+        const dist=[1,2,3,4,5].map(z=>{const f=d.zones.find(x=>x.zone===z);return{z,pct:Math.round(((f&&f.secs)||0)/tot*100)};});
+        return (_zoneCache[actId]={dist,real:true});}}
+  }catch(e){}
+  return (_zoneCache[actId]={real:false});
+}
 function openGarminDetail(idx){
   const act=GARMIN_ACTS[idx];
   const match=matchToPlan(act);
@@ -2573,13 +2591,11 @@ function openGarminDetail(idx){
   if(act.anaerobicTE)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--brick)">${act.anaerobicTE}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">ANAEROB TE</div></div>`;
   if(act.trainingLoad)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--bike)">${Math.round(act.trainingLoad)}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">LOAD</div></div>`;
   html+='</div>';
-  // Color-coded HR zone distribution (estimated from avg HR + your zones)
+  // Color-coded HR zone distribution — real from Garmin (fetched on open), else estimated
   if(act.hr&&['run','bike','swim','brick','hike','ski','soccer'].includes(act.type)){
     const zs=estZones(act.hr);
-    html+=`<div class="workout-block"><h4>💓 PULSSONER (estimert) ${learnIc('zones')}</h4>
-      <div style="display:flex;height:26px;border-radius:8px;overflow:hidden;margin:4px 0 8px">${zs.map((z,i)=>z.pct>0?`<div style="flex:${z.pct};background:${ZONE_COLORS[i]};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#0a0a0a">${z.pct>=12?'S'+z.z:''}</div>`:'').join('')}</div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted2)">${zs.map((z,i)=>`<span><span style="color:${ZONE_COLORS[i]}">■</span> S${z.z} ${z.pct}%</span>`).join('')}</div>
-      <div style="font-size:11px;color:var(--muted2);margin-top:6px">Fra snittpuls ${act.hr} bpm og dine personlige soner.</div></div>`;
+    html+=`<div class="workout-block"><h4>💓 PULSSONER <span id="zone-tag-${idx}" style="font-size:10px;color:var(--muted2);font-weight:700">(estimert)</span> ${learnIc('zones')}</h4>
+      <div id="zone-box-${idx}">${zoneBarHTML(zs,'Fra snittpuls '+act.hr+' bpm — henter ekte tall fra Garmin…')}</div></div>`;
   }
   // Training effect + load with interpretation
   if(act.aerobicTE||act.anaerobicTE||act.trainingLoad){
@@ -2617,6 +2633,14 @@ function openGarminDetail(idx){
   }
   document.getElementById('garmin-modal-content').innerHTML=html;
   document.getElementById('garmin-modal').classList.add('open');
+  // Upgrade the estimated HR-zone bar to REAL time-in-zone from Garmin
+  if(act.id&&act.hr){
+    fetchActivityZones(act.id).then(res=>{
+      if(!res||!res.real||!res.dist)return;
+      const box=document.getElementById('zone-box-'+idx);if(box)box.innerHTML=zoneBarHTML(res.dist,'Ekte tid i sone — direkte fra Garmin. ⌚');
+      const tag=document.getElementById('zone-tag-'+idx);if(tag){tag.textContent='(ekte fra Garmin)';tag.style.color='var(--run)';}
+    }).catch(()=>{});
+  }
 }
 function closeGarminModal(e){if(e.target===document.getElementById('garmin-modal'))document.getElementById('garmin-modal').classList.remove('open');}
 
