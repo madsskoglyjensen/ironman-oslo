@@ -2158,12 +2158,15 @@ function animateCount(el,to,dur){
 // ── DRILLS + MOBILITY ───────────────────────────────────────────────────────────
 const DRILLS={
   swim:[
-    ['Catch-up','Én arm venter til den andre er ferdig — lang, effektiv armføring.'],
-    ['Fingertip drag','Dra fingertuppene langs vannoverflaten i framføringen — høy albue.'],
-    ['Enarms-svømming','Svøm med én arm, den andre langs siden — kjenn taket og rotasjonen.'],
+    ['Catch-up (krål)','Én arm venter til den andre er ferdig — lang, effektiv armføring.'],
+    ['Fingertip drag (krål)','Dra fingertuppene langs vannoverflaten i framføringen — høy albue.'],
+    ['Enarms-svømming (krål)','Svøm med én arm, den andre langs siden — kjenn taket og rotasjonen.'],
     ['Sculling','Kort "skru"-bevegelse med hendene foran hodet — føl vanngrepet.'],
     ['Beinspark m/brett','Rett kropp, spark fra hofta, myke ankler — 4×25 m.'],
-    ['3-3-3','3 tak enarm venstre, 3 høyre, 3 helt — teknikk under fart.'],
+    ['3-3-3 (krål)','3 tak enarm venstre, 3 høyre, 3 helt — teknikk under fart.'],
+    ['Bryst-glid','Brystsvømming med lang glid mellom hvert tak — kjenn at du sklir gjennom vannet.'],
+    ['Bryst-timing','Tak → spark → glid. Ikke start neste tak før gliden dør ut. Effektiv, rolig frekvens.'],
+    ['Krål/bryst-veksling','25 m krål + 25 m bryst — jevn overgang, kontroll på pusten.'],
   ],
   bike:[
     ['Enbeins-tråkk','30 sek per bein — jevn, rund bevegelse uten "dødpunkt" på toppen.'],
@@ -2221,8 +2224,9 @@ function sessionBreakdown(d){
     else {rows.push(['Gjennomføring','Rolig sone 2, jevn tråkkfrekvens 85–95.']);rows.push(['Fokus','Avslappede skuldre, rund tråkkbevegelse.']);}
   } else if(t==='swim'){
     if(det.includes('open')||det.includes('åpent')){
-      rows.push(['Oppvarming','300 m rolig langs land — bli komfortabel i vannet.']);
-      rows.push(['Hoveddel',`${Math.round((d.km[0]||3)*1000)} m sammenhengende i jevnt racetempo. Orienter deg framover hvert 6.–8. tak.`]);
+      rows.push(['Oppvarming','300 m rolig langs land — start med bryst, gå over til krål.']);
+      rows.push(['Hoveddel',`${Math.round((d.km[0]||3)*1000)} m sammenhengende, hovedsakelig krål i jevnt racetempo. Legg inn noen tak bryst når du skal orientere deg (sikte) framover.`]);
+      rows.push(['Bryst','Bruk brystsvømming som "pause-tak" — den gir deg oversikt og hviler nakke/skuldre uten å stoppe.']);
       rows.push(['Trygghet','Hold deg nær land. Rolig, dyp pust — panikk kommer av stress, ikke form.']);
     } else {
       const totalM=Math.round((d.km[0]||2)*1000);
@@ -2230,11 +2234,15 @@ function sessionBreakdown(d){
       const cool=Math.max(100,Math.min(300,Math.round(totalM*0.1/50)*50));
       const drillM=Math.max(100,Math.min(200,Math.round(totalM*0.1/50)*50));
       const mainM=Math.max(200,totalM-warm-cool-drillM);
-      let dist=mainM>=2000?400:mainM>=1200?200:100;const rep=Math.max(2,Math.round(mainM/dist));
-      rows.push(['Oppvarming',`${warm} m rolig kraul, variert tempo.`]);
-      rows.push(['Drills',`${Math.round(drillM/50)}×50 m teknikk — se drills-boksen under.`]);
-      rows.push(['Hovedsett',`${rep}×${dist} m i jevnt tempo, 15–20 sek pause mellom. Hold teknikken når du blir sliten.`]);
-      rows.push(['Nedsvøm',`${cool} m veldig lett — pust ut skuldrene.`]);
+      const brM=Math.max(100,Math.round(mainM*0.3/100)*100);   // ~30% breaststroke
+      const crM=Math.max(100,mainM-brM);                        // rest crawl (race stroke)
+      let cd=crM>=1600?400:crM>=1000?200:100;const cr=Math.max(2,Math.round(crM/cd));
+      const br=Math.max(2,Math.round(brM/100));
+      rows.push(['Oppvarming',`${warm} m rolig — 100 m bryst, resten variert krål.`]);
+      rows.push(['Drills',`${Math.round(drillM/50)}×50 m teknikk (krål + bryst) — se drills-boksen under.`]);
+      rows.push(['Hovedsett · krål',`${cr}×${cd} m krål i jevnt racetempo, 15–20 sek pause. Hold teknikken når du blir sliten.`]);
+      rows.push(['Hovedsett · bryst',`${br}×100 m brystsvømming, rolig og lang glid — teknikk, pust og restitusjon mellom kråldragene.`]);
+      rows.push(['Nedsvøm',`${cool} m veldig lett, gjerne bryst — pust ut skuldrene.`]);
     }
   } else if(t==='brick'){
     rows.push(['Sykkel',(d.km[1]||'')+' km på IM-racefart (sone 2). Siste 10 min: bygg opp kadensen.']);
