@@ -1,7 +1,16 @@
 from http.server import BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import json, os
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+
+
+def today_oslo():
+    """Local Norwegian date — date.today() is UTC on Vercel and gives yesterday between 00:00–02:00."""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo('Europe/Oslo')).date().isoformat()
+    except Exception:
+        return date.today().isoformat()
 
 try:
     from garminconnect import Garmin
@@ -58,7 +67,7 @@ def make_api():
         # Method B: write token files to tmpdir, pass tokenstore path (garminconnect 0.3.x)
         try:
             # Add padding if missing (common when copied from terminal)
-            padded = tokens_b64 + "=" * (4 - len(tokens_b64) % 4)
+            padded = tokens_b64 + "=" * (-len(tokens_b64) % 4)
             raw = _json.loads(_b64.b64decode(padded))
             tmpdir = _tempfile.mkdtemp()
             for k, v in raw.items():
@@ -82,7 +91,7 @@ def get_activities(api):
     raw = api.get_activities(0, 20)
     activities = []
     for a in raw:
-        act_type = map_type(a.get('activityType', {}).get('typeKey', ''))
+        act_type = map_type((a.get('activityType') or {}).get('typeKey', ''))
         dist_m = a.get('distance', 0) or 0
         km = round(dist_m / 1000, 2)
         duration_s = a.get('duration', 0) or 0
@@ -104,8 +113,8 @@ def get_activities(api):
         anaerobic_te = a.get('anaerobicTrainingEffect')
         activities.append({
             'id': a.get('activityId'),
-            'date': a.get('startTimeLocal', '')[:10],
-            'name': a.get('activityName', 'Aktivitet'),
+            'date': (a.get('startTimeLocal') or '')[:10],
+            'name': a.get('activityName') or 'Aktivitet',
             'type': act_type,
             'km': km, 'time': time_str, 'pace': pace, 'speed': speed,
             'hr': int(avg_hr) if avg_hr else None,
@@ -136,7 +145,7 @@ def get_activities(api):
 
 
 def get_body_data(api):
-    today = date.today().isoformat()
+    today = today_oslo()
     result = {}
 
     try:
@@ -288,16 +297,19 @@ def get_activity_zones(api, activity_id):
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        email = os.environ.get('Garmin_EMAIL') or os.environ.get('GARMIN_EMAIL')
-        password = os.environ.get('Garmin_Password') or os.environ.get('GARMIN_PASSWORD')
+        # Shared-secret gate: activates when API_SECRET is set in Vercel env vars.
+        # The app sends the key as an x-api-key header (stored once in localStorage).
+        secret = os.environ.get('API_SECRET')
+        if secret and self.headers.get('x-api-key', '') != secret:
+            return self._respond(401, {'error': 'unauthorized'})
+
         qs = parse_qs(urlparse(self.path).query)
         data_type = qs.get('type', ['activities'])[0]
 
-        if not email or not password:
-            return self._respond(503, {'error': 'Garmin credentials not configured'})
         if not HAS_GARMIN:
             return self._respond(503, {'error': 'garminconnect not installed'})
 
+        # Token store alone is enough (recommended with MFA) — email/password only used as fallback in make_api()
         tokens_b64 = os.environ.get('GARMIN_TOKENS_B64')
         hint = ('Add GARMIN_TOKENS_B64 to Vercel env vars. '
                 'Run generate_tokens.py locally to create it.')
@@ -313,8 +325,8 @@ class handler(BaseHTTPRequestHandler):
                 self._respond(200, get_body_data(api))
             elif data_type == 'zones':
                 act_id = qs.get('id', [''])[0]
-                if not act_id:
-                    return self._respond(400, {'error': 'missing activity id'})
+                if not act_id or not act_id.isdigit():
+                    return self._respond(400, {'error': 'missing or invalid activity id'})
                 self._respond(200, get_activity_zones(api, act_id))
             else:
                 self._respond(200, {'activities': get_activities(api)})
@@ -325,7 +337,6 @@ class handler(BaseHTTPRequestHandler):
         body = json.dumps(data).encode()
         self.send_response(code)
         self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
