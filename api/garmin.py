@@ -125,6 +125,11 @@ def get_activities(api):
             'swolf': int(swolf) if swolf else None,
             'aerobicTE': round(aerobic_te, 1) if aerobic_te else None,
             'anaerobicTE': round(anaerobic_te, 1) if anaerobic_te else None,
+            'teLabel': a.get('trainingEffectLabel'),
+            'avgStride': round(float(a.get('avgStrideLength') or 0), 2) or None,
+            'moderateMin': int(a.get('moderateIntensityMinutes', 0) or 0) or None,
+            'vigorousMin': int(a.get('vigorousIntensityMinutes', 0) or 0) or None,
+            'minTemp': a.get('minTemperature'),
             'trainingLoad': a.get('activityTrainingLoad'),
         })
     return activities
