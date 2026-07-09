@@ -87,6 +87,20 @@ def make_api():
     return api
 
 
+# Session cache: Garmin login takes seconds — reuse it across warm lambda invocations
+_API_CACHE = {'api': None, 'ts': 0.0}
+
+
+def cached_api(force=False):
+    import time
+    if not force and _API_CACHE['api'] is not None and time.time() - _API_CACHE['ts'] < 900:
+        return _API_CACHE['api']
+    api = make_api()
+    _API_CACHE['api'] = api
+    _API_CACHE['ts'] = time.time()
+    return api
+
+
 def get_activities(api):
     raw = api.get_activities(0, 20)
     activities = []
@@ -323,24 +337,35 @@ class handler(BaseHTTPRequestHandler):
             })
 
         try:
-            api = make_api()
-            if data_type == 'body':
-                # Today (local Norwegian date) — but right after midnight Garmin has no
-                # data for the new day yet, so fall back to yesterday's full numbers.
-                data = get_body_data(api)
-                if body_is_empty(data):
-                    yesterday = (datetime.fromisoformat(today_oslo()) - timedelta(days=1)).date().isoformat()
-                    data = get_body_data(api, yesterday)
+            api = cached_api()
+            try:
+                data = self._handle(api, data_type, qs)
+            except Exception:
+                # Cached session may have expired — one fresh login, one retry
+                api = cached_api(force=True)
+                data = self._handle(api, data_type, qs)
+            if data is not None:
                 self._respond(200, data)
-            elif data_type == 'zones':
-                act_id = qs.get('id', [''])[0]
-                if not act_id or not act_id.isdigit():
-                    return self._respond(400, {'error': 'missing or invalid activity id'})
-                self._respond(200, get_activity_zones(api, act_id))
-            else:
-                self._respond(200, {'activities': get_activities(api)})
         except Exception as e:
+            _API_CACHE['api'] = None
             self._respond(500, {'error': str(e), 'hint': hint})
+
+    def _handle(self, api, data_type, qs):
+        if data_type == 'body':
+            # Today (local Norwegian date) — but right after midnight Garmin has no
+            # data for the new day yet, so fall back to yesterday's full numbers.
+            data = get_body_data(api)
+            if body_is_empty(data):
+                yesterday = (datetime.fromisoformat(today_oslo()) - timedelta(days=1)).date().isoformat()
+                data = get_body_data(api, yesterday)
+            return data
+        if data_type == 'zones':
+            act_id = qs.get('id', [''])[0]
+            if not act_id or not act_id.isdigit():
+                self._respond(400, {'error': 'missing or invalid activity id'})
+                return None
+            return get_activity_zones(api, act_id)
+        return {'activities': get_activities(api)}
 
     def _respond(self, code, data):
         body = json.dumps(data).encode()
