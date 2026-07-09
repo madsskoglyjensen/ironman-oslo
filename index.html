@@ -1100,13 +1100,6 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 function localDayStr(d){const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());}
 // ONE color truth for readiness bands (matches computeReadiness thresholds 65/45/30)
 function bandColor(band){return{high:'var(--run)',moderate:'var(--bike)',low:'var(--bike)',verylow:'var(--race)'}[band]||'#555';}
-// Optional shared secret for /api/garmin (activated when API_SECRET is set in Vercel)
-function apiHeaders(){try{const k=localStorage.getItem('im_api_key');return k?{'x-api-key':k}:{};}catch(e){return{};}}
-function setApiKey(){
-  let cur='';try{cur=localStorage.getItem('im_api_key')||'';}catch(e){}
-  const k=typeof prompt==='function'?prompt('API-et er sikret. Lim inn nøkkelen (samme verdi som API_SECRET i Vercel):',cur):null;
-  if(k&&k.trim()){try{localStorage.setItem('im_api_key',k.trim());}catch(e){}toast('🔑 Nøkkel lagret — synker på nytt');syncAll();}
-}
 function bbColor(v){if(!v)return'#555';if(v>=75)return'var(--run)';if(v>=45)return'var(--bike)';return'var(--race)';}
 function bbStatus(v){
   if(!v)return['Ingen data','Henter fra Garmin...'];
@@ -2605,7 +2598,7 @@ let _zoneCache={};
 async function fetchActivityZones(actId){
   if(_zoneCache[actId])return _zoneCache[actId];
   try{
-    const r=await fetch('/api/garmin?type=zones&id='+encodeURIComponent(actId),{signal:AbortSignal.timeout(12000),headers:apiHeaders()});
+    const r=await fetch('/api/garmin?type=zones&id='+encodeURIComponent(actId),{signal:AbortSignal.timeout(12000)});
     const tx=await r.text();
     if(r.ok&&tx.trim().startsWith('{')){const d=JSON.parse(tx);
       if(d.zones&&d.zones.length){const tot=d.zones.reduce((s,z)=>s+(z.secs||0),0)||1;
@@ -2709,9 +2702,9 @@ let _syncing=false;
 async function syncAll(){
   if(_syncing)return;_syncing=true;
   const btn=document.getElementById('global-sync');if(btn)btn.classList.add('syncing');
-  let okA=false,okB=false,auth401=false;
-  const getActs=(async()=>{try{const r=await fetch('/api/garmin',{signal:AbortSignal.timeout(15000),headers:apiHeaders()});if(r.status===401)auth401=true;const tx=await r.text();if(r.ok&&tx.trim().startsWith('{')){const d=JSON.parse(tx);if(d.activities&&d.activities.length){GARMIN_ACTS=filterActs(d.activities);garminSyncTime=new Date().toISOString();localStorage.setItem('garmin_acts',JSON.stringify(GARMIN_ACTS));localStorage.setItem('garmin_sync_time',garminSyncTime);okA=true;}}}catch(e){}})();
-  const getBody=(async()=>{try{const r=await fetch('/api/garmin?type=body',{signal:AbortSignal.timeout(18000),headers:apiHeaders()});if(r.status===401)auth401=true;const tx=await r.text();if(r.ok&&tx.trim().startsWith('{')){BODY_DATA=JSON.parse(tx);bodySyncTime=new Date().toISOString();localStorage.setItem('garmin_body',JSON.stringify(BODY_DATA));localStorage.setItem('garmin_body_time',bodySyncTime);okB=true;}}catch(e){}})();
+  let okA=false,okB=false;
+  const getActs=(async()=>{try{const r=await fetch('/api/garmin',{signal:AbortSignal.timeout(15000)});const tx=await r.text();if(r.ok&&tx.trim().startsWith('{')){const d=JSON.parse(tx);if(d.activities&&d.activities.length){GARMIN_ACTS=filterActs(d.activities);garminSyncTime=new Date().toISOString();localStorage.setItem('garmin_acts',JSON.stringify(GARMIN_ACTS));localStorage.setItem('garmin_sync_time',garminSyncTime);okA=true;}}}catch(e){}})();
+  const getBody=(async()=>{try{const r=await fetch('/api/garmin?type=body',{signal:AbortSignal.timeout(18000)});const tx=await r.text();if(r.ok&&tx.trim().startsWith('{')){BODY_DATA=JSON.parse(tx);bodySyncTime=new Date().toISOString();localStorage.setItem('garmin_body',JSON.stringify(BODY_DATA));localStorage.setItem('garmin_body_time',bodySyncTime);okB=true;}}catch(e){}})();
   await Promise.all([getActs,getBody]);
   try{autoCompleteFromGarmin();}catch(e){}
   try{render();}catch(e){}
@@ -2722,14 +2715,13 @@ async function syncAll(){
   if(okA||okB){
     let extra='';try{const R=computeReadiness();if(R.have)extra=' · '+R.title;}catch(e){}
     toast('✓ Oppdatert med ferske Garmin-tall'+extra);
-  }else if(auth401){toast('🔑 API-et krever nøkkel');setTimeout(()=>{try{setApiKey();}catch(e){}},700);}
-  else toast('Kunne ikke synke — sjekk nett/innlogging');
+  }else toast('Kunne ikke synke — sjekk nett/innlogging');
 }
 async function syncGarmin(){
   const btn=document.getElementById('garmin-sync-btn');
   btn.textContent='⟳ Henter...';btn.classList.add('syncing');
   try{
-    const resp=await fetch('/api/garmin',{signal:AbortSignal.timeout(12000),headers:apiHeaders()});
+    const resp=await fetch('/api/garmin',{signal:AbortSignal.timeout(12000)});
     const text=await resp.text();
     if(resp.ok&&text.trim().startsWith('{')){
       const data=JSON.parse(text);
@@ -2900,7 +2892,7 @@ async function syncBodyData(){
   const btn=document.getElementById('kropp-sync-btn');
   if(btn){btn.textContent='⟳ Henter...';btn.classList.add('syncing');}
   try{
-    const resp=await fetch('/api/garmin?type=body',{signal:AbortSignal.timeout(18000),headers:apiHeaders()});
+    const resp=await fetch('/api/garmin?type=body',{signal:AbortSignal.timeout(18000)});
     const text=await resp.text();
     if(resp.ok&&text.trim().startsWith('{')){
       const data=JSON.parse(text);

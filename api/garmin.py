@@ -144,8 +144,16 @@ def get_activities(api):
     return activities
 
 
-def get_body_data(api):
-    today = today_oslo()
+def body_is_empty(result):
+    """True when Garmin has no real data for the requested day (e.g. right after midnight)."""
+    tr = result.get('trainingReadiness') or {}
+    bb = result.get('bodyBattery') or {}
+    sl = result.get('sleep') or {}
+    return tr.get('score') is None and bb.get('current') is None and sl.get('score') is None
+
+
+def get_body_data(api, today=None):
+    today = today or today_oslo()
     result = {}
 
     try:
@@ -215,7 +223,7 @@ def get_body_data(api):
     # Training Status / acute load / load ratio (Fenix 8 Pro)
     try:
         ts = api.get_training_status(today)
-        rec = ts.get('mostRecentTrainingStatus', {}) if isinstance(ts, dict) else {}
+        rec = (ts.get('mostRecentTrainingStatus') or {}) if isinstance(ts, dict) else {}
         latest = rec.get('latestTrainingStatusData', {}) or {}
         tsd = next(iter(latest.values()), {}) if latest else {}
         atl = tsd.get('acuteTrainingLoadDTO', {}) or {}
@@ -277,6 +285,7 @@ def get_body_data(api):
     except Exception as e:
         result['racePredictions'] = {'error': str(e)}
 
+    result['dataDate'] = today
     return result
 
 
@@ -297,12 +306,6 @@ def get_activity_zones(api, activity_id):
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        # Shared-secret gate: activates when API_SECRET is set in Vercel env vars.
-        # The app sends the key as an x-api-key header (stored once in localStorage).
-        secret = os.environ.get('API_SECRET')
-        if secret and self.headers.get('x-api-key', '') != secret:
-            return self._respond(401, {'error': 'unauthorized'})
-
         qs = parse_qs(urlparse(self.path).query)
         data_type = qs.get('type', ['activities'])[0]
 
@@ -322,7 +325,13 @@ class handler(BaseHTTPRequestHandler):
         try:
             api = make_api()
             if data_type == 'body':
-                self._respond(200, get_body_data(api))
+                # Today (local Norwegian date) — but right after midnight Garmin has no
+                # data for the new day yet, so fall back to yesterday's full numbers.
+                data = get_body_data(api)
+                if body_is_empty(data):
+                    yesterday = (datetime.fromisoformat(today_oslo()) - timedelta(days=1)).date().isoformat()
+                    data = get_body_data(api, yesterday)
+                self._respond(200, data)
             elif data_type == 'zones':
                 act_id = qs.get('id', [''])[0]
                 if not act_id or not act_id.isdigit():
@@ -337,6 +346,7 @@ class handler(BaseHTTPRequestHandler):
         body = json.dumps(data).encode()
         self.send_response(code)
         self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
