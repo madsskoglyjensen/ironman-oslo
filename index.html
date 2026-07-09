@@ -2533,6 +2533,17 @@ function renderGarmin(){
   if(garminSyncTime)document.getElementById('garmin-sync-time').textContent='Sist synket: '+new Date(garminSyncTime).toLocaleString('no',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 }
 
+// Estimate HR-zone distribution from avg HR + the athlete's personal zones
+function estZones(avgHR){
+  const A=computeAthlete();
+  const mids=A.zones.map(z=>A.restHR+((z.lo+z.hi)/2)*A.hrr);
+  const sigma=Math.max(6,A.hrr*0.07);
+  const w=mids.map(m=>Math.exp(-Math.pow((m-avgHR)/sigma,2)/2));
+  const sum=w.reduce((a,b)=>a+b,0)||1;
+  return A.zones.map((z,i)=>({z:z.z,pct:Math.round(w[i]/sum*100)}));
+}
+function teDesc(te){if(!te)return'';if(te>=5)return'Overbelastende';if(te>=4)return'Sterkt forbedrende';if(te>=3)return'Forbedrer form';if(te>=2)return'Vedlikeholder';if(te>=1)return'Mindre effekt';return'Ingen effekt';}
+const ZONE_COLORS=['#3aa0ff','#25d366','#ff9f1a','#ff4d6d','#c77dff'];
 function openGarminDetail(idx){
   const act=GARMIN_ACTS[idx];
   const match=matchToPlan(act);
@@ -2562,6 +2573,24 @@ function openGarminDetail(idx){
   if(act.anaerobicTE)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--brick)">${act.anaerobicTE}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">ANAEROB TE</div></div>`;
   if(act.trainingLoad)html+=`<div class="workout-block" style="text-align:center"><div style="font-size:22px;font-weight:900;color:var(--bike)">${Math.round(act.trainingLoad)}</div><div style="font-size:10px;color:var(--muted2);font-weight:700;margin-top:3px">LOAD</div></div>`;
   html+='</div>';
+  // Color-coded HR zone distribution (estimated from avg HR + your zones)
+  if(act.hr&&['run','bike','swim','brick','hike','ski','soccer'].includes(act.type)){
+    const zs=estZones(act.hr);
+    html+=`<div class="workout-block"><h4>💓 PULSSONER (estimert) ${learnIc('zones')}</h4>
+      <div style="display:flex;height:26px;border-radius:8px;overflow:hidden;margin:4px 0 8px">${zs.map((z,i)=>z.pct>0?`<div style="flex:${z.pct};background:${ZONE_COLORS[i]};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#0a0a0a">${z.pct>=12?'S'+z.z:''}</div>`:'').join('')}</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;font-size:10px;color:var(--muted2)">${zs.map((z,i)=>`<span><span style="color:${ZONE_COLORS[i]}">■</span> S${z.z} ${z.pct}%</span>`).join('')}</div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:6px">Fra snittpuls ${act.hr} bpm og dine personlige soner.</div></div>`;
+  }
+  // Training effect + load with interpretation
+  if(act.aerobicTE||act.anaerobicTE||act.trainingLoad){
+    html+=`<div class="workout-block"><h4>📈 TRENINGSEFFEKT & BELASTNING ${learnIc('acuteload')}</h4>
+      <div style="display:flex;gap:8px">
+        ${act.aerobicTE?`<div class="target-item" style="flex:1"><div class="target-label">AEROB TE</div><div class="target-val" style="color:var(--run)">${act.aerobicTE}</div><div class="target-sub">${teDesc(act.aerobicTE)}</div></div>`:''}
+        ${act.anaerobicTE?`<div class="target-item" style="flex:1"><div class="target-label">ANAEROB TE</div><div class="target-val" style="color:var(--brick)">${act.anaerobicTE}</div><div class="target-sub">${teDesc(act.anaerobicTE)}</div></div>`:''}
+        ${act.trainingLoad?`<div class="target-item" style="flex:1"><div class="target-label">TRENINGSLAST</div><div class="target-val" style="color:var(--bike)">${Math.round(act.trainingLoad)}</div><div class="target-sub">belastning</div></div>`:''}
+      </div>
+      ${act.teLabel?`<div style="font-size:12px;color:var(--muted2);margin-top:8px">Garmin: <b style="color:var(--text)">${act.teLabel}</b></div>`:''}</div>`;
+  }
   if(act.type==='run'&&act.cadence){
     const onTarget=act.cadence>=172;
     html+=`<div class="${onTarget?'garmin-match':'garmin-nomatch'}">👟 Kadens: ${act.cadence} spm · Mål 174–180 spm${onTarget?' ✅':' — fokus neste økt'}</div>`;
