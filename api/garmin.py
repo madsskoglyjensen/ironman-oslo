@@ -217,7 +217,13 @@ def get_body_data(api, today=None):
     try:
         tr_list = api.get_training_readiness(today)
         if tr_list:
-            t = tr_list[-1]
+            # Garmin returns MULTIPLE readiness entries per day (score updates during
+            # the day). Order is not guaranteed — pick the NEWEST by timestamp so the
+            # app always matches what the watch shows right now.
+            if isinstance(tr_list, list):
+                t = max(tr_list, key=lambda x: (x or {}).get('timestamp') or (x or {}).get('calendarDate') or '')
+            else:
+                t = tr_list
             result['trainingReadiness'] = {
                 'score': t.get('score'),
                 'level': t.get('level'),
@@ -265,7 +271,16 @@ def get_body_data(api, today=None):
 
     try:
         rhr = api.get_rhr_day(today)
-        result['rhr'] = {'value': (rhr.get('allDayHR') or {}).get('restingHeartRate')}
+        val = (rhr.get('allDayHR') or {}).get('restingHeartRate')
+        if val is None:
+            # Today's RHR is not finalized early in the day — show yesterday's instead of "—"
+            yd = (datetime.fromisoformat(today) - timedelta(days=1)).date().isoformat()
+            try:
+                rhr_y = api.get_rhr_day(yd)
+                val = (rhr_y.get('allDayHR') or {}).get('restingHeartRate')
+            except Exception:
+                pass
+        result['rhr'] = {'value': val}
     except Exception as e:
         result['rhr'] = {'error': str(e)}
 
@@ -277,19 +292,38 @@ def get_body_data(api, today=None):
     except Exception as e:
         result['stress'] = {'error': str(e)}
 
+    def parse_max_metrics(metrics):
+        """VO2max lives under 'generic'; be liberal about list/dict shape and key names."""
+        items = metrics if isinstance(metrics, list) else [metrics]
+        for m in items or []:
+            g = (m or {}).get('generic') or {}
+            vo2 = g.get('vo2MaxPreciseValue') or g.get('vo2MaxValue')
+            if vo2:
+                return {'vo2max': vo2, 'fitnessAge': g.get('fitnessAge')}
+        return None
+
     try:
-        metrics = api.get_max_metrics(today)
-        if metrics:
-            m = metrics[0]
-            result['maxMetrics'] = {
-                'vo2max': (m.get('generic') or {}).get('vo2MaxPreciseValue'),
-                'fitnessAge': (m.get('generic') or {}).get('fitnessAge'),
-            }
+        mm = parse_max_metrics(api.get_max_metrics(today))
+        if not mm:
+            # VO2max is only attached to days with a recorded activity — on rest days
+            # today's lookup is empty. Scan back up to 7 days for the latest value.
+            for back in range(1, 8):
+                d = (datetime.fromisoformat(today) - timedelta(days=back)).date().isoformat()
+                try:
+                    mm = parse_max_metrics(api.get_max_metrics(d))
+                except Exception:
+                    mm = None
+                if mm:
+                    mm['fromDate'] = d
+                    break
+        result['maxMetrics'] = mm or {'vo2max': None, 'fitnessAge': None}
     except Exception as e:
         result['maxMetrics'] = {'error': str(e)}
 
     try:
         preds = api.get_race_predictions()
+        if isinstance(preds, list):
+            preds = preds[-1] if preds else {}
         result['racePredictions'] = {
             'run5k': preds.get('time5K'),
             'run10k': preds.get('time10K'),

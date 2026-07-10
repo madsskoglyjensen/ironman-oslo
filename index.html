@@ -3005,7 +3005,7 @@ async function syncBodyData(){
   const btn=document.getElementById('kropp-sync-btn');
   if(btn){btn.textContent='⟳ Henter...';btn.classList.add('syncing');}
   try{
-    const resp=await fetch('/api/garmin?type=body',{signal:AbortSignal.timeout(18000)});
+    const resp=await fetch('/api/garmin?type=body',{signal:AbortSignal.timeout(28000)});
     const text=await resp.text();
     if(resp.ok&&text.trim().startsWith('{')){
       const data=JSON.parse(text);
